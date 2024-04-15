@@ -21,6 +21,10 @@ const model = ref([
         items: [{ label: 'Fornecedores', icon: 'pi pi-fw pi-home', to: '/fornecedores' }]
     },
     {
+        label: 'Contratos',
+        items: [{ label: 'Contratos', icon: 'pi pi-fw pi-home', to: '/contratos' }]
+    },
+    {
         label: 'UI Components',
         items: [
             { label: 'Form Layout', icon: 'pi pi-fw pi-id-card', to: '/uikit/formlayout' },
