@@ -1,7 +1,11 @@
 <script>
 import { ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
+import { useRouter } from 'vue-router';
 import FornecedorService from '../../../service/FornecedorService';
+import ContratoService from '../../../service/ContratoService';
+import EmpresaService from '../../../service/EmpresaService';
+import UnidadeService from '../../../service/UnidadeService';
 
 export default {
     data() {
@@ -9,16 +13,28 @@ export default {
             toast: new useToast(),
             displayConfirmation: ref(false),
             fornecedorService: new FornecedorService(),
+            empresaService: new EmpresaService(),
+            contratoService: new ContratoService(),
+            unidadeService: new UnidadeService(),
+            router: useRouter(),
             displayConfirmationActivation: ref(false),
             visibleRight: ref(false),
+            unidades: ref(false),
+            visible: ref(false),
             visible2: ref(false),
+            visible3: ref(false),
             filters1: ref(null),
             loading1: ref(null),
+            empresas: ref([]),
+            empresasForm: ref(null),
+            filtroSelecionado: ref({}),
             fornecedores: ref(null),
+            contratos: ref(null),
             idFornecedor: ref(null),
             form: ref({}),
             editar: ref(false),
-            preloading: ref(true)
+            preloading: ref(true),
+            parcelasAuto: ref(null)
         };
     },
 
@@ -27,6 +43,17 @@ export default {
         this.fornecedorService.buscaFornecedores().then((data) => {
             this.fornecedores = data.response;
         });
+
+        // Metódo responsável por buscar todos os contratos
+        this.contratoService.buscaContratos().then((data) => {
+            this.contratos = data.mensagem;
+        });
+
+        // Metódo responsável por buscar todas as empresas
+        this.empresaService.buscaEmpresas().then((data) => {
+            this.empresas = data.response;
+            console.log(this.empresas);
+        });
     },
 
     methods: {
@@ -34,6 +61,21 @@ export default {
         buscaFornecedores() {
             this.fornecedorService.buscaFornecedores().then((data) => {
                 this.fornecedores = data.response;
+            });
+        },
+
+        // Metódo responsável por buscar todos contratos
+        buscaContratos() {
+            this.contratoService.buscaContratos().then((data) => {
+                this.contratos = data.mensagem;
+                console.log(this.contratos);
+            });
+        },
+
+        // Metódo responsável por buscar empresas
+        buscaEmpresas() {
+            this.empresaService.buscaEmpresas().then((data) => {
+                this.empresasForm = data.response;
             });
         },
 
@@ -74,46 +116,9 @@ export default {
             });
         },
 
-        btnEditar(id, info) {
-            this.form.nome = info.nome;
-            this.form.banco = info.cod_banco;
-            this.form.agencia = info.agencia;
-            this.form.conta = info.conta;
-            this.form.descricao_banco = info.descricao_banco;
-            this.form.nome_fantasia = info.nome_fantasia;
-            this.form.cnpj = info.cnpj;
-            this.form.login = info.login;
-            this.form.senha = info.senha;
-            this.visibleRight = true;
-            this.editar = true;
-            this.idFornecedor = id;
-        },
-
         btnCadastrar() {
             this.visibleRight = true;
             this.editar = false;
-        },
-
-        dadosBancarios(id, info) {
-            this.form.nome = info.nome;
-            this.form.banco = info.cod_banco;
-            this.form.agencia = info.agencia;
-            this.form.conta = info.conta;
-            this.idFornecedor = id;
-        },
-
-        // Metódo responsável por formatar cnpj
-        formatarCNPJ(cnpj) {
-            // Remove caracteres não numéricos
-            cnpj = cnpj.replace(/\D/g, '');
-
-            // Adiciona pontos e traços conforme necessário
-            cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
-            cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-            cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
-            cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
-
-            return cnpj;
         },
 
         showSuccess(mensagem) {
@@ -126,6 +131,69 @@ export default {
 
         showError(mensagem) {
             this.toast.add({ severity: 'error', summary: 'Ocorreu um erro!', detail: mensagem, life: 3000 });
+        },
+
+        // Metódo responsável por limpar filtros
+        limparFiltro() {
+            this.buscaContratos();
+            this.filtroSelecionado = {};
+            this.showInfo('Filtro removidos com sucesso!');
+        },
+
+        // Método responsável por aplicar filtros
+        filtrarContratos() {
+            this.contratoService
+                .buscaContratoFil(this.filtroSelecionado)
+                .then((data) => {
+                    if (data.mensagem !== null) {
+                        this.contratos = data.mensagem;
+                        this.showInfo('Filtro aplicado com sucesso!');
+                    } else {
+                        this.showError('Selecione a empresa desejada!');
+                    }
+                })
+                .catch((error) => {
+                    if (error instanceof TypeError && error.message.includes('Cannot read properties of undefined')) {
+                        this.showError('Selecione a empresa desejada!');
+                    } else {
+                        console.error('Erro:', error);
+                    }
+                });
+        },
+
+        // Metódo responsável por buscar unidades consumidoras
+        buscaUnidades() {
+            this.unidadeService.buscaUnidades().then((data) => {
+                this.unidades = data.response;
+                console.log(this.unidades);
+            });
+        },
+
+        // Metódo responsável por selecioanr unidade
+        selecionarUnidade(id_unidade) {
+            this.form.id_unidade = id_unidade;
+            this.visible2 = false;
+            this.showInfo('Unidade consumidora selecioanda com sucesso!');
+        },
+
+        // Metódo responsável por selecionar fornecedor
+        selecionarFornecedor(id_fornecedor) {
+            this.form.id_fornecedor = id_fornecedor;
+            this.visible3 = false;
+            this.showInfo('Fornecedor selecionado com sucesso!');
+        },
+
+        // Metódo responsável por selecionar emepresa
+        selecionarEmpresa(id_empresa) {
+            this.form.id_empresa = id_empresa;
+            this.visible = false;
+            this.showInfo('Empresa selecioanada com sucesso!');
+        },
+
+        // Metódo responsável por buscar parcelas
+        buscaInfoContrato(id_contrato) {
+            let salva_local = localStorage.setItem('id_contrato', id_contrato);
+            this.router.push('/parcelas'); // Mandando para tela principal
         }
     }
 };
@@ -135,22 +203,22 @@ export default {
     <div class="p-fluid formgrid grid mt-5 mb-5">
         <div class="field col-12 md:col-3">
             <label for="firstname2">Serviço:</label>
-            <InputText v-model="name" id="firstname2" type="text" />
+            <InputText v-model="filtroSelecionado.servico" id="firstname2" type="text" />
         </div>
 
         <div class="field col-12 md:col-3">
-            <label for="firstname2">Empresa:</label>
-            <Dropdown id="state" v-model="empresaSelec" :options="empresa" optionLabel="name" placeholder="Selecione..."></Dropdown>
+            <label for="firstname2">Empresa: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+            <Dropdown id="state" v-model="filtroSelecionado.empresa" :options="empresas" optionLabel="empresa" placeholder="Selecione..."></Dropdown>
         </div>
 
         <div class="field col-12 md:col-3">
             <label for="">Filtros:</label>
-            <Button @click.prevent="filterProducts()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+            <Button @click.prevent="filtrarContratos()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
         </div>
 
         <div class="field col-12 md:col-3">
             <label for="">Limpar Filtros:</label>
-            <Button @click.prevent="cleanFilter()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
+            <Button @click.prevent="limparFiltro()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
         </div>
     </div>
 
@@ -159,115 +227,262 @@ export default {
             <ProgressSpinner />
         </div> -->
 
-        <Dialog v-model:visible="visible2" modal header="PARCELAS" :style="{ width: '50rem' }"
-            ><br />
+        <!-- Dialogo para selecionar unidade consumidora -->
+        <Dialog v-model:visible="visible2" modal header="Unidade Consumidora" :style="{ width: '75rem' }">
             <div class="grid">
                 <div class="col-12 md:col-12">
-                    <div class="field-checkbox mb-0">
-                        <label class="m-3" for="empresa">Fornecedor: </label>
-                        <InputText disabled v-model="form.nome" />
-                    </div>
+                    <DataTable
+                        dataKey="id"
+                        :value="unidades"
+                        :paginator="true"
+                        :rows="10"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 25, 50, 100]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} registros!"
+                        responsiveLayout="scroll"
+                        :filters="filters1"
+                        filterDisplay="menu"
+                    >
+                        <template #header> </template>
+                        <template #empty> Nenhuma empresa encontrada! </template>
+                        <template #loading> Carregando informações... Por favor, aguarde! </template>
+
+                        <Column field="ID" header="ID" :sortable="true" class="w-1">
+                            <template #body="slotProps">
+                                <span class="p-column-title">ID</span>
+                                {{ slotProps.data.id }}
+                            </template>
+                        </Column>
+
+                        <Column field="Unidade Consumidora" header="Unidade Consumidora" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Unidade Consumidora</span>
+                                {{ slotProps.data.nome }}
+                            </template>
+                        </Column>
+
+                        <Column field="editar" header="Editar" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Qtd. de ativos</span>
+
+                                <Button @click.prevent="selecionarUnidade(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                            </template>
+                        </Column>
+                    </DataTable>
                 </div>
-                <div class="col-4 md:col-4">
-                    <div class="field-checkbox mb-0">
-                        <InputText disabled :value="'Banco: ' + form.banco" />
-                    </div>
+            </div>
+        </Dialog>
+
+        <!-- Dialogo para selecionar o fornecedor -->
+        <Dialog v-model:visible="visible3" modal header="Fornecedor" :style="{ width: '75rem' }">
+            <div class="grid">
+                <div class="col-12 md:col-12">
+                    <DataTable
+                        dataKey="id"
+                        :value="fornecedores"
+                        :paginator="true"
+                        :rows="10"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 25, 50, 100]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} registros!"
+                        responsiveLayout="scroll"
+                        :filters="filters1"
+                        filterDisplay="menu"
+                    >
+                        <template #header> </template>
+                        <template #empty> Nenhuma empresa encontrada! </template>
+                        <template #loading> Carregando informações... Por favor, aguarde! </template>
+
+                        <Column field="ID" header="ID" :sortable="true" class="w-1">
+                            <template #body="slotProps">
+                                <span class="p-column-title">ID</span>
+                                {{ slotProps.data.id }}
+                            </template>
+                        </Column>
+
+                        <Column field="Nome" header="Nome" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Nome</span>
+                                {{ slotProps.data.nome }}
+                            </template>
+                        </Column>
+
+                        <Column field="Nome Fantasia" header="Nome Fantasia" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Nome Fantasia</span>
+                                {{ slotProps.data.nome_fantasia }}
+                            </template>
+                        </Column>
+
+                        <Column field="CNPJ ou CPF" header="CNPJ ou CPF" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">CNPJ ou CPF</span>
+                                {{ slotProps.data.cnpj }}
+                            </template>
+                        </Column>
+
+                        <Column field="editar" header="Editar" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Qtd. de ativos</span>
+
+                                <Button @click.prevent="selecionarFornecedor(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                            </template>
+                        </Column>
+                    </DataTable>
                 </div>
-                <div class="col-6 md:col-4">
-                    <div class="field-checkbox mb-0">
-                        <InputText disabled :value="'Agência: ' + form.agencia" />
-                    </div>
-                </div>
-                <div class="col-4 md:col-4">
-                    <div class="field-checkbox mb-0">
-                        <InputText disabled :value="'Conta: ' + form.conta" />
-                    </div>
+            </div>
+        </Dialog>
+
+        <!-- Dialogo para selecionar empresa -->
+        <Dialog v-model:visible="visible" modal header="Empresas" :style="{ width: '75rem' }">
+            <div class="grid">
+                <div class="col-12 md:col-12">
+                    <DataTable
+                        dataKey="id"
+                        :value="empresasForm"
+                        :paginator="true"
+                        :rows="10"
+                        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
+                        :rowsPerPageOptions="[5, 10, 25, 50, 100]"
+                        currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} registros!"
+                        responsiveLayout="scroll"
+                        :filters="filters1"
+                        filterDisplay="menu"
+                    >
+                        <template #header> </template>
+                        <template #empty> Nenhuma empresa encontrada! </template>
+                        <template #loading> Carregando informações... Por favor, aguarde! </template>
+
+                        <Column field="ID" header="ID" :sortable="true" class="w-1">
+                            <template #body="slotProps">
+                                <span class="p-column-title">ID</span>
+                                {{ slotProps.data.id }}
+                            </template>
+                        </Column>
+
+                        <Column field="Empresa" header="Empresa" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Empresa</span>
+                                {{ slotProps.data.empresa }}
+                            </template>
+                        </Column>
+
+                        <Column field="CNPJ/CPF" header="CNPJ/CPF" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">CNPJ/CPF</span>
+                                {{ slotProps.data.cnpj }}
+                            </template>
+                        </Column>
+
+                        <Column field="editar" header="Editar" :sortable="true" class="w-2">
+                            <template #body="slotProps">
+                                <span class="p-column-title">Qtd. de ativos</span>
+
+                                <Button @click.prevent="selecionarEmpresa(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                            </template>
+                        </Column>
+                    </DataTable>
                 </div>
             </div>
         </Dialog>
 
         <!-- Modal de Cadastro de fornecedores -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
-            <h3 v-if="this.editar == false" class="titleForm">Formulário de Cadastro</h3>
-            <h3 v-if="this.editar == true" class="titleForm">Formulário de Edição</h3>
+            <h4 class="titleForm">Formulário de Cadastro</h4>
 
             <div class="card p-fluid">
                 <div class="field">
-                    <label for="empresa">Serviço: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <InputText v-model="form.nome" id="unidade" type="text" required />
+                    <label for="empresa">Serviço: <span class="obrigatorio">*</span></label>
+                    <InputText v-model="form.servico" id="unidade" type="text" required placeholder="Digite o serviço..." />
                 </div>
 
                 <div class="field">
-                    <label for="empresa">Contrato: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <InputText v-model="form.nome_fantasia" id="nome_fantasia" type="text" required />
+                    <label for="empresa">Contrato: <span class="obrigatorio">*</span></label>
+                    <InputText v-model="form.contrato" id="nome_fantasia" type="text" required placeholder="Digite o número do contrato..." />
                 </div>
 
                 <div class="field">
-                    <label for="firstname2">Empresa: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <Dropdown id="state" v-model="empresaSelec" :options="empresa" optionLabel="name" placeholder="Selecione..."></Dropdown>
+                    <label for="firstname2">Empresa: <span class="obrigatorio">*</span></label>
+                    <Dropdown id="state" v-model="form.empresa" :options="empresa" optionLabel="name" placeholder="Selecione..."></Dropdown>
                 </div>
-                <hr />
 
-                <h5 class="titleForm">Valores <span v-if="this.editar == false" class="obrigatorio">*</span></h5>
-
+                <div class="field">
+                    <label for="empresa">Valor Contrato: <span class="obrigatorio">*</span></label>
+                    <InputText v-model="form.valor_contrato" id="nome_fantasia" type="text" required placeholder="Digite o valor total do contrato..." />
+                </div>
+                <h class="titleForm">Unidade Consumidora <span class="obrigatorio">*</span></h>
                 <div class="grid">
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <InputNumber id="qtd_parcelas" type="text" required placeholder="Qtd. Parcelas" />
+                            <InputText v-model="form.id_unidade" id="unidade" type="text" required />
                         </div>
                     </div>
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <InputNumber id="valor" type="text" required placeholder="Valor do Contrato" />
+                            <Button @click.prevent="buscaUnidades()" label="Selecionar" class="mr-2 mb-2 p-button-info" @click="visible2 = true" />
                         </div>
                     </div>
                 </div>
-
-                <hr />
-
-                <h5 class="titleForm">Unidade Consumidora <span v-if="this.editar == false" class="obrigatorio">*</span></h5>
-
+                <h class="titleForm">Fornecedor <span class="obrigatorio">*</span></h>
                 <div class="grid">
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <InputText v-model="form.nome" id="unidade" type="text" required />
+                            <InputText v-model="form.id_fornecedor" id="unidade" type="text" required />
                         </div>
                     </div>
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <Button v-if="this.editar == false" label="Selecionar" class="mr-2 mb-2 p-button-info" />
+                            <Button label="Selecionar" class="mr-2 mb-2 p-button-info" @click="visible3 = true" />
                         </div>
                     </div>
                 </div>
-                <hr />
 
-                <h5 class="titleForm">Fornecedor <span v-if="this.editar == false" class="obrigatorio">*</span></h5>
-
+                <h class="titleForm">Empresa <span class="obrigatorio">*</span></h>
                 <div class="grid">
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <InputText v-model="form.nome" id="unidade" type="text" required />
+                            <InputText v-model="form.id_empresa" id="unidade" type="text" required />
                         </div>
                     </div>
                     <div class="col-12 md:col-6">
                         <div class="field-checkbox mb-0">
-                            <Button v-if="this.editar == false" label="Selecionar" class="mr-2 mb-2 p-button-info" />
+                            <Button label="Selecionar" class="mr-2 mb-2 p-button-info" @click.prevent="buscaEmpresas()" @click="visible = true" />
                         </div>
                     </div>
                 </div>
-                <hr />
-
+                <br />
                 <div class="grid">
                     <div class="field-checkbox mb-0">
-                        <Checkbox id="checkOption1" name="option" value="true" v-model="checkboxValue" />
+                        <Checkbox id="checkOption1" name="option" value="true" v-model="parcelasAuto" />
                         <label for="checkOption1">Gerar parcelas autómaticas</label>
                     </div>
                 </div>
+                <br />
+                <br />
+                <div v-if="parcelasAuto == 'true'" class="grid">
+                    <div class="grid">
+                        <div class="col-4 md:col-4">
+                            <div class="field-checkbox mb-0">
+                                <InputText v-model="form.qtd_parcelas" placeholder="Qtd. de Parcelas" />
+                            </div>
+                        </div>
+                        <div class="col-6 md:col-4">
+                            <div class="field-checkbox mb-0">
+                                <InputText v-model="form.mes_referencia" placeholder="Mês Ref. 1º parcela" />
+                            </div>
+                        </div>
+                        <div class="col-4 md:col-4">
+                            <div class="field-checkbox mb-0">
+                                <InputText v-model="form.data_vencimento" placeholder="Ven. 1º Parcela" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <hr />
 
                 <div class="field">
-                    <Button v-if="this.editar == false" @click.prevent="cadastrarFornecedor()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
-                    <Button v-if="this.editar == true" @click.prevent="editaFornecedor()" label="Editar" class="mr-2 mb-2 p-button-info" />
+                    <Button @click.prevent="cadastrarContrato()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
@@ -281,7 +496,7 @@ export default {
             <div class="card">
                 <DataTable
                     dataKey="id"
-                    :value="fornecedores"
+                    :value="contratos"
                     :paginator="true"
                     :rows="10"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -309,55 +524,55 @@ export default {
                     <Column field="Servico" header="Servico" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Servico</span>
-                            {{ slotProps.data.nome }}
+                            {{ slotProps.data.servico }}
                         </template>
                     </Column>
 
                     <Column field="Contrato" header="Contrato" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Contrato</span>
-                            {{ slotProps.data.nome_fantasia }}
+                            {{ slotProps.data.contrato }}
                         </template>
                     </Column>
 
                     <Column field="Empresa" header="Empresa" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Empresa</span>
-                            {{ formatarCNPJ(slotProps.data.cnpj) }}
+                            {{ slotProps.data.nome_empresa }}
                         </template>
                     </Column>
 
                     <Column field="Fornecedor" header="Fornecedor" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Fornecedor</span>
-                            {{ slotProps.data.login }}
+                            {{ slotProps.data.nome }}
                         </template>
                     </Column>
 
                     <Column field="Unidade Consumidora" header="Unidade Consumidora" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Unidade Consumidora</span>
-                            {{ slotProps.data.senha }}
+                            {{ slotProps.data.unidade_consumidora }}
                         </template>
                     </Column>
 
                     <Column field="Qtd. Parcelas" header="Qtd. Parcelas" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. Parcelas</span>
-                            {{ slotProps.data.senha }}
+                            {{ slotProps.data.qtd_parcelas }}
                         </template>
                     </Column>
 
                     <Column field="Valor Total Contrato" header="Valor Total Contrato" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Valor Total Contrato</span>
-                            {{ slotProps.data.senha }}
+                            R$ {{ slotProps.data.valor_contrato }}
                         </template>
                     </Column>
 
                     <Column field="Parcelas" header="Parcelas" :sortable="true" class="w-2">
                         <template #body="slotProps">
-                            <Button class="p-button-info" @click.prevent="dadosBancarios(slotProps.data.id, slotProps.data)" icon="pi pi-eye" @click="visible2 = true" />
+                            <Button class="p-button-secondary" icon="pi pi-eye" @click.prevent="buscaInfoContrato(slotProps.data.id)" />
                         </template>
                     </Column>
                 </DataTable>

@@ -1,20 +1,20 @@
 <script>
 import { ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import UnidadeService from '../../../service/UnidadeService.js';
+import EmpresaService from '../../../service/EmpresaService';
 
 export default {
     data() {
         return {
             toast: new useToast(),
             displayConfirmation: ref(false),
-            unidadeService: new UnidadeService(),
+            empresaService: new EmpresaService(),
             displayConfirmationActivation: ref(false),
             visibleRight: ref(false),
             filters1: ref(null),
             loading1: ref(null),
-            unidades: ref(null),
-            idUnidade: ref(null),
+            empresas: ref(null),
+            idEmpresa: ref(null),
             form: ref({}),
             editar: ref(false),
             preloading: ref(true)
@@ -22,29 +22,26 @@ export default {
     },
 
     mounted: function () {
-        // Metódo responsável por buscar todas as unidades
-        this.unidadeService.buscaUnidades().then((data) => {
-            this.unidades = data.response;
+        // Metódo responsável por buscar todas as empresas
+        this.empresaService.buscaEmpresas().then((data) => {
+            this.empresas = data.response;
         });
     },
 
     methods: {
-        // Metódo responsável por buscar todas unidades
-        buscaUnidades() {
-            this.unidadeService.buscaUnidades().then((data) => {
-                this.unidades = data.response;
+        // Metódo responsável por buscar todas empresas
+        buscaEmpresas() {
+            this.empresaService.buscaEmpresas().then((data) => {
+                this.empresas = data.response;
             });
         },
 
-        // Metódo responsável por cadastrar unidade
-        cadastrarUnidade() {
-            this.unidadeService.cadastraUnidade(this.form).then((data) => {
-                console.log(this.form);
-                console.log(data);
-
-                if (data.response == 'Unidade consumidora cadastrada com sucesso!') {
-                    this.showSuccess('Unidade consumidora cadastrada com sucesso!');
-                    this.buscaUnidades();
+        // Metódo responsável por cadastrar Empresa
+        cadastrarEmpresa() {
+            this.empresaService.cadastraEmpresa(this.form).then((data) => {
+                if (data.response == 'A empresa foi cadastrada com sucesso!') {
+                    this.showSuccess('Empresa cadastrada com sucesso!');
+                    this.buscaEmpresas();
                     this.form = {};
                 } else {
                     for (const campo in data.errors) {
@@ -59,24 +56,39 @@ export default {
             });
         },
 
-        // Metódo responsável por editar unidade
-        editaUnidade() {
-            this.unidadeService.editaUnidade(this.idUnidade, this.form).then((data) => {
-                if (data.response != 'Unidade consumidora atualizada com sucesso!') {
+        // Metódo responsável por editar empresa
+        editaEmpresa() {
+            this.empresaService.editaEmpresa(this.idEmpresa, this.form).then((data) => {
+                if (data.response != 'Empresa atualizada com sucesso!') {
                     this.showError('Preencha pelo menos 1 campo.');
                 } else {
-                    this.showSuccess('Unidade consumidora atualizada com sucesso!');
+                    this.showSuccess('Empresa atualizada com sucesso!');
                     this.form = {};
-                    this.buscaUnidades();
+                    this.buscaEmpresas();
                 }
             });
         },
 
+        // Metódo responsável por formatar cnpj
+        formatarCNPJ(cnpj) {
+            // Remove caracteres não numéricos
+            cnpj = cnpj.replace(/\D/g, '');
+
+            // Adiciona pontos e traços conforme necessário
+            cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
+            cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
+
+            return cnpj;
+        },
+
         btnEditar(id, info) {
-            this.form.unidade = info.nome;
+            this.form.empresa = info.empresa;
+            this.form.cnpj = info.cnpj;
             this.visibleRight = true;
             this.editar = true;
-            this.idUnidade = id;
+            this.idEmpresa = id;
         },
 
         btnCadastrar() {
@@ -105,35 +117,38 @@ export default {
             <ProgressSpinner />
         </div> -->
 
-        <!-- Modal de Cadastro de unidades -->
+        <!-- Modal de Cadastro de Empresa -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
             <h3 v-if="this.editar == false" class="titleForm">Formulário de Cadastro</h3>
             <h3 v-if="this.editar == true" class="titleForm">Formulário de Edição</h3>
 
             <div class="card p-fluid">
                 <div class="field">
-                    <label for="empresa">Unidade Consumidora: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <InputText v-model="form.unidade" id="unidade" type="text" required />
+                    <label for="empresa">Empresa: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+                    <InputText v-model="form.empresa" id="empresa" type="text" required />
+                </div>
+                <div class="field">
+                    <label for="cpf">CNPJ / CPF: <span v-if="this.editar == false" class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
+                    <InputText v-model="form.cnpj" id="cnpj" type="number" maxlength="14" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
                 </div>
                 <hr />
                 <div class="field">
-                    <Button v-if="this.editar == false" @click.prevent="cadastrarUnidade()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
-                    <Button v-if="this.editar == true" @click.prevent="editaUnidade()" label="Editar" class="mr-2 mb-2 p-button-info" />
-                    <Button v-if="this.editar == false" label="importar" class="mr-2 mb-2" />
+                    <Button v-if="this.editar == false" @click.prevent="cadastrarEmpresa()" label="Cadastrar" class="mr-2 mb-2" />
+                    <Button v-if="this.editar == true" @click.prevent="editaEmpresa()" label="Editar" class="mr-2 mb-2" />
                 </div>
             </div>
         </Sidebar>
 
         <!-- Tabela com todas empresas -->
         <div class="col-12">
-            <h2 class="titleForm">Unidades Consumidoras</h2>
+            <h2 class="titleForm">Empresas</h2>
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>
             <div class="card">
                 <DataTable
                     dataKey="id"
-                    :value="unidades"
+                    :value="empresas"
                     :paginator="true"
                     :rows="10"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -145,7 +160,7 @@ export default {
                 >
                     <template #header>
                         <div class="flex justify-content-between">
-                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-info" style="margin-right: 0.25em" />
+                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-primary" style="margin-right: 0.25em" />
                         </div>
                     </template>
                     <template #empty> Nenhuma empresa encontrada! </template>
@@ -158,10 +173,17 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Unidade Consumidora" header="Unidade Consumidora" :sortable="true" class="w-2">
+                    <Column field="Empresa" header="Empresa" :sortable="true" class="w-2">
                         <template #body="slotProps">
-                            <span class="p-column-title">Unidade Consumidora</span>
-                            {{ slotProps.data.nome }}
+                            <span class="p-column-title">Empresa</span>
+                            {{ slotProps.data.empresa }}
+                        </template>
+                    </Column>
+
+                    <Column field="CNPJ" header="CNPJ / CPF" :sortable="true" class="w-2">
+                        <template #body="slotProps">
+                            <span class="p-column-title">CNPJ</span>
+                            {{ formatarCNPJ(slotProps.data.cnpj) }}
                         </template>
                     </Column>
 
@@ -169,7 +191,7 @@ export default {
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
 
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-info" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-primary" />
                         </template>
                     </Column>
                 </DataTable>

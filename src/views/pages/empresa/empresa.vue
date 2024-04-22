@@ -11,10 +11,11 @@ export default {
             empresaService: new EmpresaService(),
             displayConfirmationActivation: ref(false),
             visibleRight: ref(false),
-            filters1: ref(null),
+            filtros: ref({}),
             loading1: ref(null),
             empresas: ref(null),
             idEmpresa: ref(null),
+            filtroSelecionado: ref({}),
             form: ref({}),
             editar: ref(false),
             preloading: ref(true)
@@ -25,14 +26,18 @@ export default {
         // Metódo responsável por buscar todas as empresas
         this.empresaService.buscaEmpresas().then((data) => {
             this.empresas = data.response;
+            this.preloading = false;
         });
     },
 
     methods: {
         // Metódo responsável por buscar todas empresas
         buscaEmpresas() {
+            this.preloading = true;
+
             this.empresaService.buscaEmpresas().then((data) => {
                 this.empresas = data.response;
+                this.preloading = false;
             });
         },
 
@@ -106,17 +111,61 @@ export default {
 
         showError(mensagem) {
             this.toast.add({ severity: 'error', summary: 'Ocorreu um erro!', detail: mensagem, life: 3000 });
+        },
+
+        // Metódo responsável por buscar empresas com filtros
+        buscaFiltros() {
+            this.preloading = true;
+            this.empresaService.buscaEmpresasFiltros(this.filtros).then((data) => {
+                console.log(data);
+                this.empresas = data.response;
+                this.showInfo('Filtros aplicados com sucesso!');
+                this.preloading = false;
+            });
+        },
+
+        // Metódo responsável por limpagem de filtros
+        limparFiltro() {
+            this.buscaEmpresas();
+            this.showInfo('Filtro removidos com sucesso!');
+            this.filtros = {};
         }
     }
 };
 </script>
 
 <template>
-    <div class="grid">
-        <!-- <div style="z-index: 9999999999999999999" v-if="preloading" class="full-screen-spinner">
-            <ProgressSpinner />
-        </div> -->
+    <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
+        <ProgressSpinner />
+    </div>
 
+    <h2 class="titleForm">Módulo de Empresas</h2>
+    <hr />
+
+    <div class="p-fluid formgrid grid mt-5 mb-5">
+        <div class="field col-12 md:col-3">
+            <label for="firstname2">Nome: <span class="obrigatorio">*</span></label>
+            <InputText v-model="filtros.empresa" id="firstname2" type="text" />
+        </div>
+
+        <div class="field col-12 md:col-3">
+            <label for="firstname2">CNPJ/CPF: <span class="obrigatorio">*</span></label>
+            <InputText v-model="filtros.cnpj" id="firstname2" type="text" />
+        </div>
+
+        <div class="field col-12 md:col-3">
+            <label for="">Filtros:</label>
+            <Button @click.prevent="buscaFiltros()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+        </div>
+
+        <div class="field col-12 md:col-3">
+            <label for="">Limpar Filtros:</label>
+            <Button @click.prevent="limparFiltro()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
+        </div>
+    </div>
+    <hr />
+
+    <div class="grid">
         <!-- Modal de Cadastro de Empresa -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
             <h3 v-if="this.editar == false" class="titleForm">Formulário de Cadastro</h3>
@@ -133,15 +182,14 @@ export default {
                 </div>
                 <hr />
                 <div class="field">
-                    <Button v-if="this.editar == false" @click.prevent="cadastrarEmpresa()" label="Cadastrar" class="mr-2 mb-2" />
-                    <Button v-if="this.editar == true" @click.prevent="editaEmpresa()" label="Editar" class="mr-2 mb-2" />
+                    <Button v-if="this.editar == false" @click.prevent="cadastrarEmpresa()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
+                    <Button v-if="this.editar == true" @click.prevent="editaEmpresa()" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
 
         <!-- Tabela com todas empresas -->
         <div class="col-12">
-            <h2 class="titleForm">Empresas</h2>
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>
@@ -155,12 +203,11 @@ export default {
                     :rowsPerPageOptions="[5, 10, 25, 50, 100]"
                     currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} registros!"
                     responsiveLayout="scroll"
-                    :filters="filters1"
                     filterDisplay="menu"
                 >
                     <template #header>
                         <div class="flex justify-content-between">
-                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-primary" style="margin-right: 0.25em" />
+                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-info" style="margin-right: 0.25em" />
                         </div>
                     </template>
                     <template #empty> Nenhuma empresa encontrada! </template>
@@ -191,7 +238,7 @@ export default {
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
 
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-primary" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-info" />
                         </template>
                     </Column>
                 </DataTable>

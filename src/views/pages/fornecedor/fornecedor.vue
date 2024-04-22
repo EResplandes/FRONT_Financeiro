@@ -225,8 +225,8 @@ export default {
                 </div>
 
                 <div class="field">
-                    <Button v-if="this.editar == false" @click.prevent="cadastrarFornecedor()" label="Cadastrar" class="mr-2 mb-2" />
-                    <Button v-if="this.editar == true" @click.prevent="editaFornecedor()" label="Editar" class="mr-2 mb-2" />
+                    <Button v-if="this.editar == false" @click.prevent="cadastrarFornecedor()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
+                    <Button v-if="this.editar == true" @click.prevent="editaFornecedor()" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
@@ -252,7 +252,7 @@ export default {
                 >
                     <template #header>
                         <div class="flex justify-content-between">
-                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-primary" style="margin-right: 0.25em" />
+                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-info" style="margin-right: 0.25em" />
                         </div>
                     </template>
                     <template #empty> Nenhuma empresa encontrada! </template>
@@ -302,7 +302,7 @@ export default {
 
                     <Column field="Dados" header="Dados Bancários" :sortable="true" class="w-2">
                         <template #body="slotProps">
-                            <Button @click.prevent="dadosBancarios(slotProps.data.id, slotProps.data)" icon="pi pi-search" @click="visible2 = true" />
+                            <Button @click.prevent="dadosBancarios(slotProps.data.id, slotProps.data)" icon="pi pi-search" class="p-button-secondary" @click="visible2 = true" />
                         </template>
                     </Column>
 
@@ -310,7 +310,7 @@ export default {
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
 
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-primary" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-info" />
                         </template>
                     </Column>
                 </DataTable>

@@ -46,6 +46,40 @@ export default class EmpresaService {
             });
     }
 
+    async buscaEmpresasFiltros(filtros) {
+        let url = `${API_URL}/empresas/listar-filtros`;
+
+        console.log(filtros);
+
+        if (filtros.empresa || filtros.cnpj) {
+            url += '?';
+
+            if (filtros.empresa) {
+                url += `empresa=${encodeURIComponent(filtros.empresa)}&`;
+            }
+
+            if (filtros.cnpj) {
+                url += `cnpj=${encodeURIComponent(filtros.cnpj)}`;
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: 'Bearer ' + token
+                }
+            });
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+    }
+
     async editaEmpresa(idEmpresa, form) {
         return await fetch(`${API_URL}/empresas/editar/` + idEmpresa, {
             method: 'PUT',

@@ -34,6 +34,11 @@ const router = createRouter({
                     component: () => import('@/views/pages/contrato/contrato.vue')
                 },
                 {
+                    path: '/parcelas',
+                    name: 'parcelas',
+                    component: () => import('@/views/pages/contrato/parcelas.vue')
+                },
+                {
                     path: '/uikit/formlayout',
                     name: 'formlayout',
                     component: () => import('@/views/uikit/FormLayout.vue')
