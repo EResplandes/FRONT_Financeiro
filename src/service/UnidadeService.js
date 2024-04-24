@@ -45,6 +45,34 @@ export default class UnidadeService {
             });
     }
 
+    async buscaUnidadeFiltros(filtros) {
+        let url = `${API_URL}/unidades/listar-filtros`;
+
+        if (filtros.nome) {
+            url += '?';
+
+            if (filtros.nome) {
+                url += `nome=${encodeURIComponent(filtros.nome)}&`;
+            }
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    Accept: 'application/json',
+                    Authorization: 'Bearer ' + token
+                }
+            });
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Error:', error);
+            throw error;
+        }
+    }
+
     async editaUnidade(idEmpresa, form) {
         return await fetch(`${API_URL}/unidades/editar/` + idEmpresa, {
             method: 'PUT',
@@ -54,7 +82,7 @@ export default class UnidadeService {
                 Authorization: 'Bearer ' + token
             },
             body: JSON.stringify({
-                nome: form.unidade,
+                nome: form.unidade
             })
         })
             .then((res) => res.json())

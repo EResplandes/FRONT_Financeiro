@@ -56,7 +56,8 @@ export default class ContratoService {
     }
 
     async cadastrarContrato(form) {
-        return fetch(`${API_URL}/fornecedores/cadastrar`, {
+        console.log(this.formatarData(form.data_vencimento));
+        return fetch(`${API_URL}/contratos/cadastrar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -73,7 +74,7 @@ export default class ContratoService {
                 valor_contrato: form.valor_contrato,
                 parcela_automatica: form.parcela_automatica,
                 mes_referencia: form.mes_referencia,
-                data_vencimento: form.data_vencimento
+                data_vencimento: this.formatarData(form.data_vencimento)
             })
         })
             .then((res) => res.json())
@@ -84,5 +85,14 @@ export default class ContratoService {
                 console.error('Error:', error);
                 throw error;
             });
+    }
+
+    formatarData(data) {
+        const dataObj = new Date(data);
+        const ano = dataObj.getFullYear();
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0'); // Adiciona zero à esquerda se necessário
+        const dia = String(dataObj.getDate()).padStart(2, '0'); // Adiciona zero à esquerda se necessário
+
+        return `${ano}-${mes}-${dia}`;
     }
 }

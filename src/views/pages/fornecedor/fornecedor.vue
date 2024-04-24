@@ -17,8 +17,9 @@ export default {
             fornecedores: ref(null),
             idFornecedor: ref(null),
             form: ref({}),
+            filtros: ref({}),
             editar: ref(false),
-            preloading: ref(true),
+            preloading: ref(true)
         };
     },
 
@@ -26,23 +27,23 @@ export default {
         // Metódo responsável por buscar todas as fornecedores
         this.fornecedorService.buscaFornecedores().then((data) => {
             this.fornecedores = data.response;
+            this.preloading = false;
         });
     },
 
     methods: {
         // Metódo responsável por buscar todas fornecedores
         buscaFornecedores() {
+            this.preloading = true;
             this.fornecedorService.buscaFornecedores().then((data) => {
                 this.fornecedores = data.response;
+                this.preloading = false;
             });
         },
 
         // Metódo responsável por cadastrar fornecedor
         cadastrarFornecedor() {
             this.fornecedorService.cadastraFornecedor(this.form).then((data) => {
-                console.log(this.form);
-                console.log(data);
-
                 if (data.response == 'Fornecedor cadastrado com sucesso!') {
                     this.showSuccess('Fornecedor cadastrado com sucesso!');
                     this.buscaFornecedores();
@@ -63,7 +64,6 @@ export default {
         // Metódo responsável por editar unidade
         editaFornecedor() {
             this.fornecedorService.editarFornecedor(this.idFornecedor, this.form).then((data) => {
-                console.log(data);
                 if (data.response != 'Fornecedor atualizado com sucesso!') {
                     this.showError('Preencha pelo menos 1 campo.');
                 } else {
@@ -126,17 +126,62 @@ export default {
 
         showError(mensagem) {
             this.toast.add({ severity: 'error', summary: 'Ocorreu um erro!', detail: mensagem, life: 3000 });
+        },
+
+        buscaFiltros() {
+            this.preloading = true;
+            this.fornecedorService.buscaFornecedoresFiltros(this.filtros).then((data) => {
+                this.fornecedores = data.response;
+                this.preloading = false;
+                this.showInfo('Filtros aplicados com sucesso!');
+            });
+        },
+
+        limparFiltro() {
+            this.filtros = {};
+            this.buscaFornecedores();
         }
     }
 };
 </script>
 
 <template>
-    <div class="grid">
-        <!-- <div style="z-index: 9999999999999999999" v-if="preloading" class="full-screen-spinner">
-            <ProgressSpinner />
-        </div> -->
+    <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
+        <ProgressSpinner />
+    </div>
 
+    <h2 class="titleForm">Módulo de Fornecedores</h2>
+    <hr />
+
+    <div class="p-fluid formgrid grid mt-5 mb-5">
+        <div class="field col-12 md:col-3">
+            <label for="firstname2">Nome: </label>
+            <InputText v-model="filtros.nome" id="firstname2" type="text" placeholder="Digite o nome do fornecedor..." />
+        </div>
+
+        <div class="field col-12 md:col-3">
+            <label for="firstname2">Nome Fantasia: </label>
+            <InputText v-model="filtros.nome_fantasia" id="firstname2" type="text" placeholder="Digite o nome do fornecedor..." />
+        </div>
+
+        <div class="field col-12 md:col-2">
+            <label for="firstname2">CNPJ/CPF: </label>
+            <InputText v-model="filtros.cnpj" id="firstname2" type="text" placeholder="Digite o cnpj ou cpf..." />
+        </div>
+
+        <div class="field col-12 md:col-2">
+            <label for="">Filtros:</label>
+            <Button @click.prevent="buscaFiltros()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+        </div>
+
+        <div class="field col-12 md:col-2">
+            <label for="">Limpar Filtros:</label>
+            <Button @click.prevent="limparFiltro()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
+        </div>
+    </div>
+    <hr />
+
+    <div class="grid">
         <Dialog v-model:visible="visible2" modal header="Dados Bancários" :style="{ width: '50rem' }"
             ><br />
             <div class="grid">
@@ -233,7 +278,6 @@ export default {
 
         <!-- Tabela com todos fornecedores -->
         <div class="col-12">
-            <h2 class="titleForm">Fornecedores</h2>
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>

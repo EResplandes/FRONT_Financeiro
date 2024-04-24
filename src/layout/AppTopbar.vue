@@ -3,13 +3,14 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useLayout } from '@/layout/composables/layout';
 import { useRouter } from 'vue-router';
 
-const { layoutConfig, onMenuToggle } = useLayout();
+const { layoutConfig, onMenuToggle, setScale } = useLayout();
 
 const outsideClickListener = ref(null);
 const topbarMenuActive = ref(false);
 const router = useRouter();
 
 onMounted(() => {
+    decrementScale(4);
     bindOutsideClickListener();
 
     const token = localStorage.getItem('token');
@@ -20,12 +21,21 @@ onMounted(() => {
     }
 });
 
+const decrementScale = (v) => {
+    setScale(layoutConfig.scale.value - v);
+    applyScale();
+};
+
+const applyScale = () => {
+    document.documentElement.style.fontSize = layoutConfig.scale.value + 'px';
+};
+
 onBeforeUnmount(() => {
     unbindOutsideClickListener();
 });
 
 const logoUrl = computed(() => {
-    return `layout/images/${layoutConfig.darkTheme.value ? 'logo-white' : 'logo-dark'}.svg`;
+    return `https://www.gruporialma.com.br/wp-content/uploads/2023/12/imagem_2023-12-01_162149885.png`;
 });
 
 const onTopBarMenuButton = () => {

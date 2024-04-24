@@ -1,20 +1,25 @@
 <script>
 import { ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
-import EmpresaService from '../../../service/EmpresaService';
+import { useRouter } from 'vue-router';
+import ParcelaService from '../../../service/ParcelaService';
 
 export default {
     data() {
         return {
             toast: new useToast(),
             displayConfirmation: ref(false),
-            empresaService: new EmpresaService(),
+            parcelaService: new ParcelaService(),
             displayConfirmationActivation: ref(false),
             visibleRight: ref(false),
             filters1: ref(null),
+            router: useRouter(),
             loading1: ref(null),
             empresas: ref(null),
+            informacoes: ref(null),
+            parcelas: ref(null),
             idEmpresa: ref(null),
+            id_contrato: localStorage.getItem('id_contrato'),
             form: ref({}),
             editar: ref(false),
             preloading: ref(true)
@@ -22,53 +27,20 @@ export default {
     },
 
     mounted: function () {
-        // Metódo responsável por buscar todas as empresas
-        this.empresaService.buscaEmpresas().then((data) => {
-            this.empresas = data.response;
+        // Metódo responsável por buscar informações do contrato
+        this.parcelaService.buscaInformacoes(this.id_contrato).then((data) => {
+            this.informacoes = data.mensagem;
+            this.preloading = false;
+        });
+
+        // Metódo responsável por buscar todas parcelas do contrato
+        this.parcelaService.buscaParcelas(this.id_contrato).then((data) => {
+            this.parcelas = data.response;
+            this.preloading = false;
         });
     },
 
     methods: {
-        // Metódo responsável por buscar todas empresas
-        buscaEmpresas() {
-            this.empresaService.buscaEmpresas().then((data) => {
-                this.empresas = data.response;
-            });
-        },
-
-        // Metódo responsável por cadastrar Empresa
-        cadastrarEmpresa() {
-            this.empresaService.cadastraEmpresa(this.form).then((data) => {
-                if (data.response == 'A empresa foi cadastrada com sucesso!') {
-                    this.showSuccess('Empresa cadastrada com sucesso!');
-                    this.buscaEmpresas();
-                    this.form = {};
-                } else {
-                    for (const campo in data.errors) {
-                        if (Object.hasOwnProperty.call(data.errors, campo)) {
-                            const mensagensErro = data.errors[campo];
-                            for (const mensagem of mensagensErro) {
-                                this.showError(mensagem);
-                            }
-                        }
-                    }
-                }
-            });
-        },
-
-        // Metódo responsável por editar empresa
-        editaEmpresa() {
-            this.empresaService.editaEmpresa(this.idEmpresa, this.form).then((data) => {
-                if (data.response != 'Empresa atualizada com sucesso!') {
-                    this.showError('Preencha pelo menos 1 campo.');
-                } else {
-                    this.showSuccess('Empresa atualizada com sucesso!');
-                    this.form = {};
-                    this.buscaEmpresas();
-                }
-            });
-        },
-
         // Metódo responsável por formatar cnpj
         formatarCNPJ(cnpj) {
             // Remove caracteres não numéricos
@@ -106,6 +78,11 @@ export default {
 
         showError(mensagem) {
             this.toast.add({ severity: 'error', summary: 'Ocorreu um erro!', detail: mensagem, life: 3000 });
+        },
+
+        // Metódo responsável por voltar para meenu de contrar
+        voltar() {
+            this.router.push('/contratos'); // Mandando para tela principal
         }
     }
 };
@@ -113,42 +90,90 @@ export default {
 
 <template>
     <div class="grid">
-        <!-- <div style="z-index: 9999999999999999999" v-if="preloading" class="full-screen-spinner">
+        <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
             <ProgressSpinner />
-        </div> -->
-
-        <!-- Modal de Cadastro de Empresa -->
+        </div>
+        <!-- Modal de Cadastro de Parcelas -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
             <h3 v-if="this.editar == false" class="titleForm">Formulário de Cadastro</h3>
             <h3 v-if="this.editar == true" class="titleForm">Formulário de Edição</h3>
 
             <div class="card p-fluid">
                 <div class="field">
-                    <label for="empresa">Empresa: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <InputText v-model="form.empresa" id="empresa" type="text" required />
+                    <label for="empresa">Mês de Referência: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+                    <InputText v-model="form.cnpj" id="cnpj" type="number" maxlength="2" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
                 </div>
                 <div class="field">
-                    <label for="cpf">CNPJ / CPF: <span v-if="this.editar == false" class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
+                    <label for="cpf">Data de Vencimento: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+                    <Calendar :showIcon="true" :showButtonBar="true" v-model="form.data_vencimento"></Calendar>
+                </div>
+                <div class="field">
+                    <label for="cpf">Observação:</label>
                     <InputText v-model="form.cnpj" id="cnpj" type="number" maxlength="14" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
+                </div>
+                <div class="field">
+                    <label for="cpf">Valor da Parcela: <span v-if="this.editar == false" class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
+                    <InputText v-model="form.cnpj" id="cnpj" type="number" />
                 </div>
                 <hr />
                 <div class="field">
-                    <Button v-if="this.editar == false" @click.prevent="cadastrarEmpresa()" label="Cadastrar" class="mr-2 mb-2" />
-                    <Button v-if="this.editar == true" @click.prevent="editaEmpresa()" label="Editar" class="mr-2 mb-2" />
+                    <Button v-if="this.editar == false" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
+                    <Button v-if="this.editar == true" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
+        <Button label="Voltar" @click.prevent="voltar()" class="p-button-secondary mr-2" icon="pi pi-chevron-left"></Button>
 
         <!-- Tabela com todas empresas -->
         <div class="col-12">
-            <h2 class="titleForm">Empresas</h2>
+            <h2 class="titleForm">Contrato nº {{ this.id_contrato }}</h2>
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>
+            <div v-for="item in informacoes" class="surface-section px-4 py-5 md:px-6 lg:px-8">
+                <div class="flex align-items-start flex-column lg:justify-content-between lg:flex-row">
+                    <div>
+                        <div class="font-medium text-3xl text-900">{{ item.servico }} | Unidade: {{ item.unidade_consumidora }}</div>
+                        <br /><br />
+                        <div class="flex align-items-center text-700 flex-wrap">
+                            <div class="mr-5 flex align-items-center mt-3">
+                                <i class="pi pi-money-bill mr-2"></i>
+                                <span>Valor: R$ {{ item.valor_contrato }}</span>
+                            </div>
+                            <div class="mr-5 flex align-items-center mt-3">
+                                <i class="pi pi-sitemap mr-2"></i>
+                                <span>Qtd. Parcelas: {{ item.qtd_parcelas }}</span>
+                            </div>
+                            <div class="flex align-items-center mt-3 mr-4">
+                                <i class="pi pi-building mr-2"></i>
+                                <span>Empresa: {{ item.nome_empresa }}</span>
+                            </div>
+                            <div class="flex align-items-center mt-3 mr-4">
+                                <i class="pi pi-user mr-2"></i>
+                                <span>Fornecedor: {{ item.nome }}</span>
+                            </div>
+                            <div class="flex align-items-center mt-3 mr-4">
+                                <i class="pi pi-id-card mr-2"></i>
+                                <span>Nome Fantasia: {{ item.nome_fantasia }}</span>
+                            </div>
+                            <div class="flex align-items-center mt-3">
+                                <i class="pi pi-info mr-2"></i>
+                                <span>CNPJ: {{ formatarCNPJ(item.cnpj) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 lg:mt-0">
+                        <Button label="Dados Bancários" class="p-button-info mr-2" icon="pi pi-database"></Button>
+                        <Button label="Gerar" icon="pi pi-eye" class="p-button-secondary"></Button>
+                    </div>
+                </div>
+            </div>
+            <br />
+
             <div class="card">
                 <DataTable
                     dataKey="id"
-                    :value="empresas"
+                    :value="parcelas"
                     :paginator="true"
                     :rows="10"
                     paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -160,38 +185,52 @@ export default {
                 >
                     <template #header>
                         <div class="flex justify-content-between">
-                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar" class="p-button-primary" style="margin-right: 0.25em" />
+                            <Button @click.prevent="btnCadastrar()" icon="pi pi-pencil" label="Cadastrar Parcela" class="p-button-info" style="margin-right: 0.25em" />
                         </div>
                     </template>
-                    <template #empty> Nenhuma empresa encontrada! </template>
+                    <template #empty> Nenhuma parcela cadastrada! </template>
                     <template #loading> Carregando informações... Por favor, aguarde! </template>
 
-                    <Column field="ID" header="ID" :sortable="true" class="w-1">
+                    <Column field="Mês de Referência" header="Mês de Referência" :sortable="true" class="w-1">
                         <template #body="slotProps">
-                            <span class="p-column-title">ID</span>
-                            {{ slotProps.data.id }}
+                            <span class="p-column-title">Mês de Referência</span>
+                            {{ slotProps.data.mes_referencia }}
                         </template>
                     </Column>
 
-                    <Column field="Empresa" header="Empresa" :sortable="true" class="w-2">
+                    <Column field="Dt. de Vencimento" header="Dt. de Vencimento" :sortable="true" class="w-1">
                         <template #body="slotProps">
-                            <span class="p-column-title">Empresa</span>
-                            {{ slotProps.data.empresa }}
+                            <span class="p-column-title">Dt. de Vencimento</span>
+                            {{ slotProps.data.dt_vencimento }}
                         </template>
                     </Column>
 
-                    <Column field="CNPJ" header="CNPJ / CPF" :sortable="true" class="w-2">
+                    <Column field="Observação" header="Observação" :sortable="true" class="w-2">
                         <template #body="slotProps">
-                            <span class="p-column-title">CNPJ</span>
-                            {{ formatarCNPJ(slotProps.data.cnpj) }}
+                            <span class="p-column-title">Observação</span>
+                            {{ slotProps.data.observacao }}
+                        </template>
+                    </Column>
+
+                    <Column field="Valor da Parcela" header="Valor da Parcela" :sortable="true" class="w-1">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Valor da Parcela</span>
+                            {{ slotProps.data.valor }}
+                        </template>
+                    </Column>
+
+                    <Column field="Statusa" header="Statusa" :sortable="true" class="w-1">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Statusa</span>
+                            <!-- {{ slotProps.data.valor }} -->
                         </template>
                     </Column>
 
                     <Column field="editar" header="Editar" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
-
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-primary" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-info" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Comprovante" icon="pi pi-check" class="p-button-secondary ml-2" />
                         </template>
                     </Column>
                 </DataTable>

@@ -24,6 +24,7 @@ export default {
             visible2: ref(false),
             visible3: ref(false),
             filters1: ref(null),
+            filtros: ref({}),
             loading1: ref(null),
             empresas: ref([]),
             empresasForm: ref(null),
@@ -47,12 +48,12 @@ export default {
         // Metódo responsável por buscar todos os contratos
         this.contratoService.buscaContratos().then((data) => {
             this.contratos = data.mensagem;
+            this.preloading = false;
         });
 
         // Metódo responsável por buscar todas as empresas
         this.empresaService.buscaEmpresas().then((data) => {
             this.empresas = data.response;
-            console.log(this.empresas);
         });
     },
 
@@ -66,53 +67,17 @@ export default {
 
         // Metódo responsável por buscar todos contratos
         buscaContratos() {
+            this.preloading = true;
             this.contratoService.buscaContratos().then((data) => {
                 this.contratos = data.mensagem;
-                console.log(this.contratos);
+                this.preloading = false;
             });
         },
 
         // Metódo responsável por buscar empresas
         buscaEmpresas() {
             this.empresaService.buscaEmpresas().then((data) => {
-                this.empresasForm = data.response;
-            });
-        },
-
-        // Metódo responsável por cadastrar fornecedor
-        cadastrarFornecedor() {
-            this.fornecedorService.cadastraFornecedor(this.form).then((data) => {
-                console.log(this.form);
-                console.log(data);
-
-                if (data.response == 'Fornecedor cadastrado com sucesso!') {
-                    this.showSuccess('Fornecedor cadastrado com sucesso!');
-                    this.buscaFornecedores();
-                    this.form = {};
-                } else {
-                    for (const campo in data.errors) {
-                        if (Object.hasOwnProperty.call(data.errors, campo)) {
-                            const mensagensErro = data.errors[campo];
-                            for (const mensagem of mensagensErro) {
-                                this.showError(mensagem);
-                            }
-                        }
-                    }
-                }
-            });
-        },
-
-        // Metódo responsável por editar unidade
-        editaFornecedor() {
-            this.fornecedorService.editarFornecedor(this.idFornecedor, this.form).then((data) => {
-                console.log(data);
-                if (data.response != 'Fornecedor atualizado com sucesso!') {
-                    this.showError('Preencha pelo menos 1 campo.');
-                } else {
-                    this.showSuccess('Fornecedor atualizado com sucesso!');
-                    this.form = {};
-                    this.buscaFornecedores();
-                }
+                this.empresas = data.response;
             });
         },
 
@@ -142,9 +107,11 @@ export default {
 
         // Método responsável por aplicar filtros
         filtrarContratos() {
+            this.preloading = true;
             this.contratoService
                 .buscaContratoFil(this.filtroSelecionado)
                 .then((data) => {
+                    this.preloading = false;
                     if (data.mensagem !== null) {
                         this.contratos = data.mensagem;
                         this.showInfo('Filtro aplicado com sucesso!');
@@ -153,6 +120,7 @@ export default {
                     }
                 })
                 .catch((error) => {
+                    this.preloading = false;
                     if (error instanceof TypeError && error.message.includes('Cannot read properties of undefined')) {
                         this.showError('Selecione a empresa desejada!');
                     } else {
@@ -165,7 +133,6 @@ export default {
         buscaUnidades() {
             this.unidadeService.buscaUnidades().then((data) => {
                 this.unidades = data.response;
-                console.log(this.unidades);
             });
         },
 
@@ -194,12 +161,73 @@ export default {
         buscaInfoContrato(id_contrato) {
             let salva_local = localStorage.setItem('id_contrato', id_contrato);
             this.router.push('/parcelas'); // Mandando para tela principal
+        },
+
+        // Metódo responsável por cadastrar contrato
+        cadastrarContrato() {
+            this.contratoService.cadastrarContrato(this.form).then((data) => {});
+        },
+
+        // Metódo respomsável por aplicar filtros
+        buscaFiltrosUnidade() {
+            this.preloading = true;
+            this.unidadeService.buscaUnidadeFiltros(this.filtros).then((data) => {
+                this.unidades = data.response;
+                this.showInfo('Filtros aplicados com sucesso!');
+                this.preloading = false;
+            });
+        },
+
+        // Metódo respomsável por limpar filtros
+        limparFiltroUnidade() {
+            this.filtros = {};
+            this.buscaUnidades();
+            this.showInfo('Filtros removidos com sucesso!');
+        },
+
+        // Metódo respomsável por aplicar filtros
+        buscaFiltrosFornecedor() {
+            this.preloading = true;
+            this.fornecedorService.buscaFornecedoresFiltros(this.filtros).then((data) => {
+                this.fornecedores = data.response;
+                this.preloading = false;
+                this.showInfo('Filtros aplicados com sucesso!');
+            });
+        },
+
+        // Metódo respomsável por limpar filtros
+        limparFiltroFornecedor() {
+            this.filtros = {};
+            this.buscaFornecedores();
+        },
+
+        // Metódo responsável por buscar empresas com filtros
+        buscaFiltrosEmpresa() {
+            this.preloading = true;
+            this.empresaService.buscaEmpresasFiltros(this.filtros).then((data) => {
+                this.empresas = data.response;
+                this.showInfo('Filtros aplicados com sucesso!');
+                this.preloading = false;
+            });
+        },
+
+        // Metódo responsável por limpagem de filtros
+        limparFiltroEmpresa() {
+            this.buscaEmpresas();
+            this.showInfo('Filtro removidos com sucesso!');
+            this.filtros = {};
         }
     }
 };
 </script>
 
 <template>
+    <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
+        <ProgressSpinner />
+    </div>
+
+    <h2 class="titleForm">Módulo de Contratos</h2>
+    <hr />
     <div class="p-fluid formgrid grid mt-5 mb-5">
         <div class="field col-12 md:col-3">
             <label for="firstname2">Serviço:</label>
@@ -223,13 +251,27 @@ export default {
     </div>
 
     <div class="grid">
-        <!-- <div style="z-index: 9999999999999999999" v-if="preloading" class="full-screen-spinner">
-            <ProgressSpinner />
-        </div> -->
-
         <!-- Dialogo para selecionar unidade consumidora -->
         <Dialog v-model:visible="visible2" modal header="Unidade Consumidora" :style="{ width: '75rem' }">
             <div class="grid">
+                <!-- Filtros -->
+                <div class="p-fluid formgrid grid justify-content-end">
+                    <div class="field col-12 md:col-3">
+                        <label for="firstname2">Unidade: <span class="obrigatorio">*</span></label>
+                        <InputText v-model="filtros.nome" id="firstname2" type="text" placeholder="Digite o nome da unidade consumidora..." />
+                    </div>
+
+                    <div class="field col-12 md:col-3">
+                        <label for="">Filtros:</label>
+                        <Button @click.prevent="buscaFiltrosUnidade()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+                    </div>
+
+                    <div class="field col-12 md:col-3">
+                        <label for="">Limpar Filtros:</label>
+                        <Button @click.prevent="limparFiltroUnidade()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
+                    </div>
+                </div>
+
                 <div class="col-12 md:col-12">
                     <DataTable
                         dataKey="id"
@@ -265,7 +307,7 @@ export default {
                             <template #body="slotProps">
                                 <span class="p-column-title">Qtd. de ativos</span>
 
-                                <Button @click.prevent="selecionarUnidade(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                                <Button @click.prevent="selecionarUnidade(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-info" />
                             </template>
                         </Column>
                     </DataTable>
@@ -275,6 +317,32 @@ export default {
 
         <!-- Dialogo para selecionar o fornecedor -->
         <Dialog v-model:visible="visible3" modal header="Fornecedor" :style="{ width: '75rem' }">
+            <div class="p-fluid formgrid grid mt-5 mb-5">
+                <div class="field col-12 md:col-3">
+                    <label for="firstname2">Nome: </label>
+                    <InputText v-model="filtros.nome" id="firstname2" type="text" placeholder="Digite o nome do fornecedor..." />
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="firstname2">Nome Fantasia: </label>
+                    <InputText v-model="filtros.nome_fantasia" id="firstname2" type="text" placeholder="Digite o nome do fornecedor..." />
+                </div>
+
+                <div class="field col-12 md:col-2">
+                    <label for="firstname2">CNPJ/CPF: </label>
+                    <InputText v-model="filtros.cnpj" id="firstname2" type="text" placeholder="Digite o cnpj ou cpf..." />
+                </div>
+
+                <div class="field col-12 md:col-2">
+                    <label for="">Filtros:</label>
+                    <Button @click.prevent="buscaFiltrosFornecedor()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+                </div>
+
+                <div class="field col-12 md:col-2">
+                    <label for="">Limpar Filtros:</label>
+                    <Button @click.prevent="limparFiltroFornecedor()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR" icon="pi pi-trash" />
+                </div>
+            </div>
             <div class="grid">
                 <div class="col-12 md:col-12">
                     <DataTable
@@ -325,7 +393,7 @@ export default {
                             <template #body="slotProps">
                                 <span class="p-column-title">Qtd. de ativos</span>
 
-                                <Button @click.prevent="selecionarFornecedor(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                                <Button @click.prevent="selecionarFornecedor(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-info" />
                             </template>
                         </Column>
                     </DataTable>
@@ -335,11 +403,32 @@ export default {
 
         <!-- Dialogo para selecionar empresa -->
         <Dialog v-model:visible="visible" modal header="Empresas" :style="{ width: '75rem' }">
+            <div class="p-fluid formgrid grid mt-5 mb-5">
+                <div class="field col-12 md:col-3">
+                    <label for="firstname2">Nome: <span class="obrigatorio">*</span></label>
+                    <InputText v-model="filtros.empresa" id="firstname2" type="text" />
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="firstname2">CNPJ/CPF: <span class="obrigatorio">*</span></label>
+                    <InputText v-model="filtros.cnpj" id="firstname2" type="text" />
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="">Filtros:</label>
+                    <Button @click.prevent="buscaFiltrosEmpresa()" type="button" class="mr-2 mb-2 p-button-info" label="FILTRAR" icon="pi pi-search" />
+                </div>
+
+                <div class="field col-12 md:col-3">
+                    <label for="">Limpar Filtros:</label>
+                    <Button @click.prevent="limparFiltroEmpresa()" type="button" class="mr-2 mb-2 p-button-danger" label="LIMPAR FILTROS" icon="pi pi-trash" />
+                </div>
+            </div>
             <div class="grid">
                 <div class="col-12 md:col-12">
                     <DataTable
                         dataKey="id"
-                        :value="empresasForm"
+                        :value="empresas"
                         :paginator="true"
                         :rows="10"
                         paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink CurrentPageReport RowsPerPageDropdown"
@@ -378,7 +467,7 @@ export default {
                             <template #body="slotProps">
                                 <span class="p-column-title">Qtd. de ativos</span>
 
-                                <Button @click.prevent="selecionarEmpresa(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-primary" />
+                                <Button @click.prevent="selecionarEmpresa(slotProps.data.id)" label="Selecionar" icon="pi pi-check" class="p-button-info" />
                             </template>
                         </Column>
                     </DataTable>
@@ -397,17 +486,17 @@ export default {
                 </div>
 
                 <div class="field">
-                    <label for="empresa">Contrato: <span class="obrigatorio">*</span></label>
+                    <label for="empresa">Contrato: </label>
                     <InputText v-model="form.contrato" id="nome_fantasia" type="text" required placeholder="Digite o número do contrato..." />
                 </div>
 
                 <div class="field">
                     <label for="firstname2">Empresa: <span class="obrigatorio">*</span></label>
-                    <Dropdown id="state" v-model="form.empresa" :options="empresa" optionLabel="name" placeholder="Selecione..."></Dropdown>
+                    <Dropdown id="state" v-model="form.empresa" :options="empresas" optionLabel="empresa" placeholder="Selecione..."></Dropdown>
                 </div>
 
                 <div class="field">
-                    <label for="empresa">Valor Contrato: <span class="obrigatorio">*</span></label>
+                    <label for="empresa">Valor Contrato: </label>
                     <InputText v-model="form.valor_contrato" id="nome_fantasia" type="text" required placeholder="Digite o valor total do contrato..." />
                 </div>
                 <h class="titleForm">Unidade Consumidora <span class="obrigatorio">*</span></h>
@@ -473,7 +562,7 @@ export default {
                         </div>
                         <div class="col-4 md:col-4">
                             <div class="field-checkbox mb-0">
-                                <InputText v-model="form.data_vencimento" placeholder="Ven. 1º Parcela" />
+                                <Calendar :showIcon="true" :showButtonBar="true" v-model="form.data_vencimento" placeholder="Vencimento"></Calendar>
                             </div>
                         </div>
                     </div>
@@ -489,7 +578,6 @@ export default {
 
         <!-- Tabela com todos fornecedores -->
         <div class="col-12">
-            <h2 class="titleForm">Contratos</h2>
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>
@@ -570,7 +658,7 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Parcelas" header="Parcelas" :sortable="true" class="w-2">
+                    <Column field="Visualizar" header="Visualizar" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <Button class="p-button-secondary" icon="pi pi-eye" @click.prevent="buscaInfoContrato(slotProps.data.id)" />
                         </template>

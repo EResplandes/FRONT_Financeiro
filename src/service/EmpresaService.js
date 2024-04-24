@@ -49,8 +49,6 @@ export default class EmpresaService {
     async buscaEmpresasFiltros(filtros) {
         let url = `${API_URL}/empresas/listar-filtros`;
 
-        console.log(filtros);
-
         if (filtros.empresa || filtros.cnpj) {
             url += '?';
 
