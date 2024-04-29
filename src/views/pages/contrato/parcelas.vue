@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { useRouter } from 'vue-router';
 import ParcelaService from '../../../service/ParcelaService';
+import { generatePDF } from '../relatorios/pdfGenerator.js';
 
 export default {
     data() {
@@ -22,7 +23,8 @@ export default {
             id_contrato: localStorage.getItem('id_contrato'),
             form: ref({}),
             editar: ref(false),
-            preloading: ref(true)
+            preloading: ref(true),
+            loading: ref(false) // Botão de PDF
         };
     },
 
@@ -41,6 +43,14 @@ export default {
     },
 
     methods: {
+        // Metódo responsável por buscar parcelas
+        buscaParcelas() {
+            this.parcelaService.buscaInformacoes(this.id_contrato).then((data) => {
+                this.parcelas = data.mensagem;
+                this.preloading = false;
+            });
+        },
+
         // Metódo responsável por formatar cnpj
         formatarCNPJ(cnpj) {
             // Remove caracteres não numéricos
@@ -53,6 +63,40 @@ export default {
             cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
 
             return cnpj;
+        },
+
+        // Metódo responsável por cadastrar parcela
+        cadastrarParcela() {
+            this.parcelaService.cadastrarParcela(this.form).then((data) => {
+                if (data.response == 'Parcela cadastrada com sucesso!') {
+                    this.showSuccess('Parcela cadastrada com sucesso!');
+                    this.buscaParcelas();
+                    this.form = {};
+                } else {
+                    for (const campo in data.errors) {
+                        if (Object.hasOwnProperty.call(data.errors, campo)) {
+                            const mensagensErro = data.errors[campo];
+                            for (const mensagem of mensagensErro) {
+                                this.showError(mensagem);
+                            }
+                        }
+                    }
+                }
+            });
+        },
+
+        // Metódo responsável por gerar pdf
+        async gerarPDF() {
+            this.loading = true;
+            try {
+                await generatePDF(this.informacoes, this.parcelas);
+            } catch (error) {
+                console.error('Erro ao gerar PDF:', error);
+                // Manipule o erro conforme necessário
+            } finally {
+                // Define a propriedade 'loading' como false após a conclusão do processo
+                this.loading = false;
+            }
         },
 
         btnEditar(id, info) {
@@ -101,23 +145,23 @@ export default {
             <div class="card p-fluid">
                 <div class="field">
                     <label for="empresa">Mês de Referência: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <InputText v-model="form.cnpj" id="cnpj" type="number" maxlength="2" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
+                    <InputText v-model="form.mes_referencia" id="cnpj" type="number" maxlength="2" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
                 </div>
                 <div class="field">
                     <label for="cpf">Data de Vencimento: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <Calendar :showIcon="true" :showButtonBar="true" v-model="form.data_vencimento"></Calendar>
+                    <Calendar :showIcon="true" :showButtonBar="true" v-model="form.dt_vencimento"></Calendar>
                 </div>
                 <div class="field">
                     <label for="cpf">Observação:</label>
-                    <InputText v-model="form.cnpj" id="cnpj" type="number" maxlength="14" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
+                    <InputText v-model="form.observacao" id="cnpj" />
                 </div>
                 <div class="field">
                     <label for="cpf">Valor da Parcela: <span v-if="this.editar == false" class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
-                    <InputText v-model="form.cnpj" id="cnpj" type="number" />
+                    <InputText v-model="form.valor_parcela" id="cnpj" type="number" />
                 </div>
                 <hr />
                 <div class="field">
-                    <Button v-if="this.editar == false" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
+                    <Button @click.prevent="cadastrarParcela()" v-if="this.editar == false" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
                     <Button v-if="this.editar == true" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
@@ -163,8 +207,7 @@ export default {
                         </div>
                     </div>
                     <div class="mt-3 lg:mt-0">
-                        <Button label="Dados Bancários" class="p-button-info mr-2" icon="pi pi-database"></Button>
-                        <Button label="Gerar" icon="pi pi-eye" class="p-button-secondary"></Button>
+                        <Button @click.prevent="gerarPDF()" :loading="loading" label="PDF" icon="pi pi-print" class="p-button-secondary"></Button>
                     </div>
                 </div>
             </div>
@@ -219,18 +262,18 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Statusa" header="Statusa" :sortable="true" class="w-1">
+                    <Column field="Status" header="Status" :sortable="true" class="w-1">
                         <template #body="slotProps">
-                            <span class="p-column-title">Statusa</span>
-                            <!-- {{ slotProps.data.valor }} -->
+                            <span class="p-column-title">Status</span>
+                            {{ slotProps.data.status }}
                         </template>
                     </Column>
 
                     <Column field="editar" header="Editar" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Editar" icon="pi pi-check" class="p-button-info" />
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Comprovante" icon="pi pi-check" class="p-button-secondary ml-2" />
+                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Enviar Diretôria" icon="pi pi-check" class="p-button-info" />
+                            <Button v-if="slotProps.data.status == 'Pago'" @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Comprovante" icon="pi pi-check" class="p-button-secondary ml-2" />
                         </template>
                     </Column>
                 </DataTable>

@@ -3,8 +3,9 @@ const token = localStorage.getItem('token');
 import API_URL from './config.js';
 
 export default class FornecedorService {
-    async cadastraFornecedor(form) {
-        return fetch(`${API_URL}/fornecedores/cadastrar`, {
+    async cadastrarParcela(form) {
+        console.log(this.formatarData(form.dt_vencimento))
+        return fetch(`${API_URL}/parcelas/cadastrar`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -12,15 +13,11 @@ export default class FornecedorService {
                 Authorization: 'Bearer ' + token
             },
             body: JSON.stringify({
-                nome: form.nome,
-                nome_fantasia: form.nome_fantasia,
-                cnpj: form.cnpj,
-                login: form.login,
-                senha: form.senha,
-                cod_banco: form.banco,
-                agencia: form.agencia,
-                conta: form.conta,
-                descricao_banco: form.descricao_banco
+                fk_contrato: localStorage.getItem('id_contrato'),
+                mes_referencia: form.mes_referencia,
+                dt_vencimento: this.formatarData(form.dt_vencimento),
+                observacao: form.observacao,
+                valor_parcela: form.valor_parcela
             })
         })
             .then((res) => res.json())
@@ -68,4 +65,14 @@ export default class FornecedorService {
                 throw error;
             });
     }
+
+    formatarData(data) {
+        const dataObj = new Date(data);
+        const ano = dataObj.getFullYear();
+        const mes = String(dataObj.getMonth() + 1).padStart(2, '0'); // Adiciona zero à esquerda se necessário
+        const dia = String(dataObj.getDate()).padStart(2, '0'); // Adiciona zero à esquerda se necessário
+
+        return `${ano}-${mes}-${dia}`;
+    }
+
 }

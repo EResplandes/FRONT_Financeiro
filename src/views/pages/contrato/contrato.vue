@@ -216,6 +216,11 @@ export default {
             this.buscaEmpresas();
             this.showInfo('Filtro removidos com sucesso!');
             this.filtros = {};
+        },
+
+        // Metódo responsável por gerar pdf
+        gerarPDF() {
+            this.router.push('/pdf');
         }
     }
 };
@@ -661,6 +666,7 @@ export default {
                     <Column field="Visualizar" header="Visualizar" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <Button class="p-button-secondary" icon="pi pi-eye" @click.prevent="buscaInfoContrato(slotProps.data.id)" />
+                            <Button @click.prevent="gerarPDF()" icon="pi pi-print" class="p-button-info ml-1"></Button>
                         </template>
                     </Column>
                 </DataTable>

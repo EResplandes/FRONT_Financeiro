@@ -56,7 +56,6 @@ export default class ContratoService {
     }
 
     async cadastrarContrato(form) {
-        console.log(this.formatarData(form.data_vencimento));
         return fetch(`${API_URL}/contratos/cadastrar`, {
             method: 'POST',
             headers: {
