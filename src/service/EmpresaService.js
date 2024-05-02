@@ -18,7 +18,6 @@ export default class EmpresaService {
         })
             .then((res) => res.json())
             .then((d) => {
-                console.log(d);
                 return d;
             })
             .catch((error) => {
@@ -37,7 +36,6 @@ export default class EmpresaService {
         })
             .then((res) => res.json())
             .then((d) => {
-                console.log(d);
                 return d;
             })
             .catch((error) => {
@@ -93,7 +91,6 @@ export default class EmpresaService {
         })
             .then((res) => res.json())
             .then((d) => {
-                console.log(d);
                 return d;
             })
             .catch((error) => {

@@ -25,13 +25,6 @@ const model = ref([
         items: [{ label: 'Contratos', icon: 'pi pi-fw pi-book', to: '/contratos' }]
     },
     {
-        label: 'Aprovação',
-        items: [
-            { label: 'Diretoria', icon: 'pi pi-fw pi-pencil', to: '/contratos' },
-            { label: 'Presidência', icon: 'pi pi-fw pi-pencil', to: '/contratos' }
-        ]
-    },
-    {
         label: 'UI Components',
         items: [
             { label: 'Form Layout', icon: 'pi pi-fw pi-id-card', to: '/uikit/formlayout' },

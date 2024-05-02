@@ -67,7 +67,7 @@ export default class ContratoService {
                 servico: form.servico,
                 contrato: form.contrato,
                 fk_unidade: form.id_unidade,
-                fk_empresa: form.id_empresa,
+                fk_empresa: form.id_empresa?.id,
                 fk_fornecedor: form.id_fornecedor,
                 qtd_parcelas: form.qtd_parcelas,
                 valor_contrato: form.valor_contrato,

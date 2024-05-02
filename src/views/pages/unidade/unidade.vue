@@ -197,7 +197,7 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Unidade Consumidora" header="Unidade Consumidora" :sortable="true" class="w-2">
+                    <Column field="Unidade Consumidora" header="Unidade Consumidora" :sortable="true" class="w-9">
                         <template #body="slotProps">
                             <span class="p-column-title">Unidade Consumidora</span>
                             {{ slotProps.data.nome }}

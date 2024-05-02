@@ -65,6 +65,20 @@ export default {
             return cnpj;
         },
 
+        // Metódo responsável por formatar data para padrão br
+        formatarDataParaBR(dataString) {
+            // Converte a string em um objeto Date
+            const data = new Date(dataString);
+
+            // Obtém o dia, mês e ano da data
+            const dia = String(data.getDate()).padStart(2, '0');
+            const mes = String(data.getMonth() + 1).padStart(2, '0');
+            const ano = data.getFullYear();
+
+            // Retorna a data formatada como "dia/mês/ano"
+            return `${dia}/${mes}/${ano}`;
+        },
+
         // Metódo responsável por cadastrar parcela
         cadastrarParcela() {
             this.parcelaService.cadastrarParcela(this.form).then((data) => {
@@ -166,7 +180,7 @@ export default {
                 </div>
             </div>
         </Sidebar>
-        <Button label="Voltar" @click.prevent="voltar()" class="p-button-secondary mr-2" icon="pi pi-chevron-left"></Button>
+        <Button label="Voltar" @click.prevent="voltar()" class="p-button-secondary m-4" icon="pi pi-chevron-left"></Button>
 
         <!-- Tabela com todas empresas -->
         <div class="col-12">
@@ -223,7 +237,6 @@ export default {
                     :rowsPerPageOptions="[5, 10, 25, 50, 100]"
                     currentPageReportTemplate="Mostrando {first} de {last} de {totalRecords} registros!"
                     responsiveLayout="scroll"
-                    :filters="filters1"
                     filterDisplay="menu"
                 >
                     <template #header>
@@ -244,7 +257,7 @@ export default {
                     <Column field="Dt. de Vencimento" header="Dt. de Vencimento" :sortable="true" class="w-1">
                         <template #body="slotProps">
                             <span class="p-column-title">Dt. de Vencimento</span>
-                            {{ slotProps.data.dt_vencimento }}
+                            {{ formatarDataParaBR(slotProps.data.dt_vencimento) }}
                         </template>
                     </Column>
 
@@ -258,7 +271,7 @@ export default {
                     <Column field="Valor da Parcela" header="Valor da Parcela" :sortable="true" class="w-1">
                         <template #body="slotProps">
                             <span class="p-column-title">Valor da Parcela</span>
-                            {{ slotProps.data.valor }}
+                            R$ {{ slotProps.data.valor }}
                         </template>
                     </Column>
 

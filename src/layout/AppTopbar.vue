@@ -10,7 +10,7 @@ const topbarMenuActive = ref(false);
 const router = useRouter();
 
 onMounted(() => {
-    decrementScale(4);
+    decrementScale(2);
     bindOutsideClickListener();
 
     const token = localStorage.getItem('token');
@@ -24,6 +24,11 @@ onMounted(() => {
 const decrementScale = (v) => {
     setScale(layoutConfig.scale.value - v);
     applyScale();
+};
+
+const logout = () => {
+    localStorage.clear();
+    router.push('/auth/login'); // Mandando para tela login
 };
 
 const applyScale = () => {
@@ -93,8 +98,8 @@ const isOutsideClicked = (event) => {
         </button>
 
         <div class="layout-topbar-menu" :class="topbarMenuClasses">
-            <button @click="onSettingsClick()" class="p-link layout-topbar-button">
-                <i class="pi pi-cog"></i>
+            <button @click="logout()" class="p-link layout-topbar-button">
+                <i class="pi pi-chevron-right"></i>
                 <span>Settings</span>
             </button>
         </div>
