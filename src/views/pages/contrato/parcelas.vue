@@ -14,6 +14,7 @@ export default {
             displayConfirmationActivation: ref(false),
             visibleRight: ref(false),
             filters1: ref(null),
+            visibleRightLink: ref(null),
             router: useRouter(),
             loading1: ref(null),
             empresas: ref(null),
@@ -45,8 +46,17 @@ export default {
     methods: {
         // Metódo responsável por buscar parcelas
         buscaParcelas() {
+            // Metódo responsável por buscar todas parcelas do contrato
+            this.parcelaService.buscaParcelas(this.id_contrato).then((data) => {
+                this.parcelas = data.response;
+                this.preloading = false;
+            });
+        },
+
+        // Metódo responsável por bvscar informações dos contratos
+        buscaContrato() {
             this.parcelaService.buscaInformacoes(this.id_contrato).then((data) => {
-                this.parcelas = data.mensagem;
+                this.informacoes = data.mensagem;
                 this.preloading = false;
             });
         },
@@ -85,7 +95,9 @@ export default {
                 if (data.response == 'Parcela cadastrada com sucesso!') {
                     this.showSuccess('Parcela cadastrada com sucesso!');
                     this.buscaParcelas();
+                    this.buscaContrato();
                     this.form = {};
+                    this.visibleRight = false;
                 } else {
                     for (const campo in data.errors) {
                         if (Object.hasOwnProperty.call(data.errors, campo)) {
@@ -121,9 +133,23 @@ export default {
             this.idEmpresa = id;
         },
 
+        btnLink(dados) {
+            this.visibleRightLink = true;
+        },
+
         btnCadastrar() {
             this.visibleRight = true;
             this.editar = false;
+        },
+
+        btnExcluir(idParcela) {
+            this.preloading = true;
+            this.parcelaService.excluirParcela(idParcela).then((data) => {
+                this.showSuccess('Parcela excluída com sucesso!');
+                this.buscaParcelas();
+                this.buscaContrato();
+                this.preloading = false;
+            });
         },
 
         showSuccess(mensagem) {
@@ -153,38 +179,108 @@ export default {
         </div>
         <!-- Modal de Cadastro de Parcelas -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
-            <h3 v-if="this.editar == false" class="titleForm">Formulário de Cadastro</h3>
-            <h3 v-if="this.editar == true" class="titleForm">Formulário de Edição</h3>
+            <h3 class="titleForm">Formulário de Cadastro</h3>
 
             <div class="card p-fluid">
                 <div class="field">
-                    <label for="empresa">Mês de Referência: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+                    <label for="empresa">Mês de Referência: <span class="obrigatorio">*</span></label>
                     <InputText v-model="form.mes_referencia" id="cnpj" type="number" maxlength="2" oninput="javascript: if (this.value.length > this.maxLength) this.value = this.value.slice(0, this.maxLength);" />
                 </div>
                 <div class="field">
-                    <label for="cpf">Data de Vencimento: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
-                    <Calendar :showIcon="true" :showButtonBar="true" v-model="form.dt_vencimento"></Calendar>
+                    <label for="cpf">Data de Vencimento: <span class="obrigatorio">*</span></label>
+                    <Calendar dateFormat="dd/mm/yy" :showIcon="true" :showButtonBar="true" v-model="form.dt_vencimento"></Calendar>
                 </div>
                 <div class="field">
                     <label for="cpf">Observação:</label>
                     <InputText v-model="form.observacao" id="cnpj" />
                 </div>
                 <div class="field">
-                    <label for="cpf">Valor da Parcela: <span v-if="this.editar == false" class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
+                    <label for="cpf">Valor da Parcela: <span class="obrigatorio">*</span> <span class="txt-small">(Somente números!)</span></label>
                     <InputText v-model="form.valor_parcela" id="cnpj" type="number" />
                 </div>
                 <hr />
                 <div class="field">
-                    <Button @click.prevent="cadastrarParcela()" v-if="this.editar == false" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
+                    <Button @click.prevent="cadastrarParcela()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
                     <Button v-if="this.editar == true" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
-        <Button label="Voltar" @click.prevent="voltar()" class="p-button-secondary m-4" icon="pi pi-chevron-left"></Button>
 
-        <!-- Tabela com todas empresas -->
+        <!-- Modal para enviar para o link -->
+        <Sidebar style="width: 75%" v-model:visible="visibleRightLink" :baseZIndex="1000" position="right">
+            <h3 class="titleForm">Formulário Link</h3>
+            <div class="card p-fluid">
+                <TabView :activeIndex="activeIndex">
+                    <TabPanel header="Formulário">
+                        <div class="p-fluid formgrid grid">
+                            <div class="field col-1 md:col-1">
+                                <label for="firstname2">Urgente</label>
+                                <InputSwitch :trueValue="1" :falseValue="0" :modelValue="form.urgente" v-model="form.urgente" />
+                            </div>
+                            <div class="field col-12 md:col-4">
+                                <label for="firstname2">Valor <span class="obrigatorio">*</span></label>
+                                <InputNumber v-tooltip.top="'Digite o valor do pedido'" v-model="form.valor" inputId="minmaxfraction" :minFractionDigits="2" :maxFractionDigits="2" placeholder="R$..." />
+                            </div>
+                            <div class="field col-12 md:col-2">
+                                <label for="firstname2">Nº Pedido no Protheus <span class="obrigatorio">* </span></label>
+                                <InputText type="number" v-tooltip.top="'Digite o numero do pedido'" v-model="form.protheus" />
+                            </div>
+
+                            <div class="field col-12 md:col-2">
+                                <label for="firstname2">Dt de Vencimento <span class="obrigatorio">*</span></label>
+                                <Calendar dateFormat="dd/mm/yy" v-tooltip.top="'Selecione a data de vencimento'" v-model="form.dt_vencimento" showIcon iconDisplay="input" />
+                            </div>
+
+                            <div class="field col-1 md:col-3">
+                                <label for="firstname2">PDF<span class="obrigatorio">*</span></label>
+                                <FileUpload chooseLabel="Selecionar Arquivo" @change="uploadPdf" mode="basic" type="file" ref="pdf" name="demo[]" accept=".pdf,.docx" :maxFileSize="999999999"></FileUpload>
+                            </div>
+
+                            <div class="field col-12 md:col-4">
+                                <label for="Link">Link <span class="obrigatorio">*</span></label>
+                                <Dropdown id="Link" v-model="form.link" :options="links" optionLabel="link" placeholder="Selecione..."></Dropdown>
+                            </div>
+                            <div class="field col-12 md:col-4">
+                                <label for="Empresa">Empresa <span class="obrigatorio">*</span></label>
+                                <Dropdown id="Empresa" v-model="form.empresa" :options="empresas" optionLabel="nome_empresa" placeholder="Selecione..."></Dropdown>
+                            </div>
+                            <div class="field col-12 md:col-4">
+                                <label for="Local">Local <span class="obrigatorio">*</span></label>
+                                <Dropdown id="Local" v-model="form.local" :options="locais" optionLabel="local" placeholder="Selecione..."></Dropdown>
+                            </div>
+                            <div class="field col-12">
+                                <label for="descricao">Forncedor: <span class="obrigatorio">*</span></label>
+                                <Textarea v-tooltip.top="'Digite o forncedor'" id="descricao" rows="4" v-model="form.descricao" placeholder="Digite o fornecedor..." />
+                            </div>
+                        </div>
+                    </TabPanel>
+                    <TabPanel header="Fluxo" class="p-tabview-selected-secondary">
+                        <div class="p-fluid formgrid grid">
+                            <div class="field col-4 md:col-4">
+                                <h6>GERENTES</h6>
+                                <Listbox v-model="form.fluxo" :options="gerentes" multiple optionLabel="nome" class="w-full mt-4" />
+                            </div>
+                            <div class="field col-4 md:col-4">
+                                <h6>DIRETORES</h6>
+                                <Listbox v-model="form.fluxo" :options="diretores" multiple optionLabel="nome" class="w-full mt-4" />
+                            </div>
+                            <div class="field col-4 md:col-4">
+                                <h6>FLUXO</h6>
+                                <Listbox :options="form.fluxo" multiple optionLabel="nome" class="w-full mt-4" />
+                            </div>
+                            <div class="field col-12 md:col-12 mt-5">
+                                <Button @click.prevent="cadastrarPedido()" icon="pi pi-check" label="Cadastrar Pedido" class="mr-2 mb-2 p-button-info" />
+                            </div>
+                        </div>
+                    </TabPanel>
+                </TabView>
+            </div>
+        </Sidebar>
+
         <div class="col-12">
             <h2 class="titleForm">Contrato nº {{ this.id_contrato }}</h2>
+            <Button label="Voltar" @click.prevent="voltar()" class="p-button-secondary m-4" icon="pi pi-chevron-left"></Button>
+
             <div class="col-12 lg:col-6">
                 <Toast />
             </div>
@@ -196,7 +292,7 @@ export default {
                         <div class="flex align-items-center text-700 flex-wrap">
                             <div class="mr-5 flex align-items-center mt-3">
                                 <i class="pi pi-money-bill mr-2"></i>
-                                <span>Valor: R$ {{ item.valor_contrato }}</span>
+                                <span>Valor: {{ item.valor_contrato?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                             </div>
                             <div class="mr-5 flex align-items-center mt-3">
                                 <i class="pi pi-sitemap mr-2"></i>
@@ -268,10 +364,10 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Valor da Parcela" header="Valor da Parcela" :sortable="true" class="w-1">
+                    <Column field="Valor da Parcela" header="Valor da Parcela" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Valor da Parcela</span>
-                            R$ {{ slotProps.data.valor }}
+                            {{ slotProps.data.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}
                         </template>
                     </Column>
 
@@ -282,10 +378,11 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="editar" header="Editar" :sortable="true" class="w-2">
+                    <Column field="..." header="..." :sortable="true" class="w-1">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
-                            <Button @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Enviar Diretôria" icon="pi pi-check" class="p-button-info" />
+                            <Button @click.prevent="btnLink(slotProps.data.id, slotProps.data)" icon="pi pi-pencil" class="p-button-info" />
+                            <Button @click.prevent="btnExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
                             <Button v-if="slotProps.data.status == 'Pago'" @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Comprovante" icon="pi pi-check" class="p-button-secondary ml-2" />
                         </template>
                     </Column>

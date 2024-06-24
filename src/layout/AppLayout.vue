@@ -61,7 +61,7 @@ const isOutsideClicked = (event) => {
     <div class="layout-wrapper" :class="containerClass">
         <app-topbar></app-topbar>
         <div class="layout-sidebar">
-            <Message severity="info">Sistema em Desenvolvimento!</Message>
+            <!-- <Message severity="info">Sistema em Desenvolvimento!</Message> -->
             <app-sidebar></app-sidebar>
         </div>
         <div class="layout-main-container">

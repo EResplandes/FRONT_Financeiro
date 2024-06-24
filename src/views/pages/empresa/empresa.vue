@@ -145,12 +145,12 @@ export default {
     <div class="p-fluid formgrid grid mt-5 mb-5">
         <div class="field col-12 md:col-3">
             <label for="firstname2">Nome: <span class="obrigatorio">*</span></label>
-            <InputText v-model="filtros.empresa" id="firstname2" type="text" />
+            <InputText v-model="filtros.empresa" id="firstname2" type="text" placeholder="Digite o nome da empresa..."/>
         </div>
 
         <div class="field col-12 md:col-3">
             <label for="firstname2">CNPJ/CPF: <span class="obrigatorio">*</span></label>
-            <InputText v-model="filtros.cnpj" id="firstname2" type="text" />
+            <InputText v-model="filtros.cnpj" id="firstname2" type="text" placeholder="Digite o cnpj ou cpf da empresa..."/>
         </div>
 
         <div class="field col-12 md:col-3">

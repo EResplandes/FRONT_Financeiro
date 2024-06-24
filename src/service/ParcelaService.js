@@ -4,7 +4,7 @@ import API_URL from './config.js';
 
 export default class FornecedorService {
     async cadastrarParcela(form) {
-        console.log(this.formatarData(form.dt_vencimento))
+        console.log(this.formatarData(form.dt_vencimento));
         return fetch(`${API_URL}/parcelas/cadastrar`, {
             method: 'POST',
             headers: {
@@ -66,6 +66,24 @@ export default class FornecedorService {
             });
     }
 
+    async excluirParcela(idParcela) {
+        return await fetch(`${API_URL}/parcelas/deletar/${idParcela}`, {
+            method: 'DELETE',
+            headers: {
+                Accept: 'application/json',
+                Authorization: 'Bearer ' + token
+            }
+        })
+            .then((res) => res.json())
+            .then((d) => {
+                return d;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                throw error;
+            });
+    }
+
     formatarData(data) {
         const dataObj = new Date(data);
         const ano = dataObj.getFullYear();
@@ -74,5 +92,4 @@ export default class FornecedorService {
 
         return `${ano}-${mes}-${dia}`;
     }
-
 }

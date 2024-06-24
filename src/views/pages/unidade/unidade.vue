@@ -130,7 +130,7 @@ export default {
     <div class="p-fluid formgrid grid mt-5 mb-5">
         <div class="field col-12 md:col-3">
             <label for="firstname2">Unidade: <span class="obrigatorio">*</span></label>
-            <InputText v-model="filtros.nome" id="firstname2" type="text" />
+            <InputText v-model="filtros.nome" id="firstname2" type="text" placeholder="Digite a unidade..."/>
         </div>
 
         <div class="field col-12 md:col-3">

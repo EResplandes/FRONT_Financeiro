@@ -164,10 +164,13 @@ export default {
 
         // Metódo responsável por cadastrar contrato
         cadastrarContrato() {
+            this.preloading = true;
             this.contratoService.cadastrarContrato(this.form).then((data) => {
-                if (data.response == 'Contrato criado com sucesso!') {
+                if (data.mensagem == 'Contrato criado com sucesso!') {
                     this.showSuccess('Contrato criado com sucesso!');
                     this.buscaContratos();
+                    this.preloading = false;
+                    this.visibleRight = false;
                     this.form = {};
                 } else {
                     for (const campo in data.errors) {
@@ -178,6 +181,7 @@ export default {
                             }
                         }
                     }
+                    this.preloading = false;
                 }
             });
         },
@@ -245,11 +249,11 @@ export default {
     <div class="p-fluid formgrid grid mt-5 mb-5">
         <div class="field col-12 md:col-3">
             <label for="firstname2">Serviço:</label>
-            <InputText v-model="filtroSelecionado.servico" id="firstname2" type="text" />
+            <InputText v-model="filtroSelecionado.servico" id="firstname2" type="text" placeholder="Digite o serviço..." />
         </div>
 
         <div class="field col-12 md:col-3">
-            <label for="firstname2">Empresa: <span v-if="this.editar == false" class="obrigatorio">*</span></label>
+            <label for="firstname2">Empresa: <span class="obrigatorio">*</span></label>
             <Dropdown id="state" v-model="filtroSelecionado.empresa" :options="empresas" optionLabel="empresa" placeholder="Selecione..."></Dropdown>
         </div>
 
@@ -426,7 +430,7 @@ export default {
                 </div>
 
                 <div class="field">
-                    <label for="empresa">Contrato: </label>
+                    <label for="empresa">Contrato: <span class="obrigatorio">*</span></label>
                     <InputText v-model="form.contrato" id="nome_fantasia" type="text" required placeholder="Digite o número do contrato..." />
                 </div>
 
@@ -435,10 +439,11 @@ export default {
                     <Dropdown id="state" v-model="form.id_empresa" :options="empresas" optionLabel="empresa" placeholder="Selecione..."></Dropdown>
                 </div>
 
-                <div class="field">
+                <!-- <div class="field">
                     <label for="empresa">Valor Contrato: </label>
                     <InputText v-model="form.valor_contrato" id="nome_fantasia" type="text" required placeholder="Digite o valor total do contrato..." />
-                </div>
+                </div> -->
+
                 <h class="titleForm">Unidade Consumidora <span class="obrigatorio">*</span></h>
                 <div class="grid">
                     <div class="col-12 md:col-6">
@@ -467,15 +472,15 @@ export default {
                 </div>
 
                 <br />
-                <div class="grid">
+                <!-- <div class="grid">
                     <div class="field-checkbox mb-0">
                         <Checkbox id="checkOption1" name="option" value="true" v-model="parcelasAuto" />
                         <label for="checkOption1">Gerar parcelas autómaticas</label>
                     </div>
-                </div>
-                <br />
-                <br />
-                <div v-if="parcelasAuto == 'true'" class="grid">
+                </div> -->
+                <!-- <br />
+                <br /> -->
+                <!-- <div v-if="parcelasAuto == 'true'" class="grid">
                     <div class="grid">
                         <div class="col-4 md:col-4">
                             <div class="field-checkbox mb-0">
@@ -493,9 +498,9 @@ export default {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
-                <hr />
+                <!-- <hr /> -->
 
                 <div class="field">
                     <Button @click.prevent="cadastrarContrato()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
@@ -581,7 +586,7 @@ export default {
                     <Column field="Valor Total Contrato" header="Valor Total Contrato" :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Valor Total Contrato</span>
-                            {{ slotProps.data.valor_contrato ? 'R$ ' + slotProps.data.valor_contrato : 'N/C' }}
+                            {{ slotProps.data.valor_contrato ? slotProps.data.valor_contrato.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'N/C' }}
                         </template>
                     </Column>
 

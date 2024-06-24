@@ -77,7 +77,7 @@ export function generatePDF(informacoes, parcelas) {
         const ano = dataVencimento.getFullYear();
         const dataFormatada = `${dia}/${mes}/${ano}`;
 
-        return [parcela.mes_referencia, dataFormatada, parcela.status, `R$ ${parcela.valor}`, parcela.observacao];
+        return [parcela.mes_referencia, dataFormatada, parcela.status, parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), parcela.observacao];
     });
 
     // Adicione a tabela ao documento PDF
