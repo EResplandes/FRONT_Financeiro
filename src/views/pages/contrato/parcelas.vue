@@ -4,26 +4,31 @@ import { useToast } from 'primevue/usetoast';
 import { useRouter } from 'vue-router';
 import ParcelaService from '../../../service/ParcelaService';
 import { generatePDF } from '../relatorios/pdfGenerator.js';
+import { useConfirm } from 'primevue/useconfirm';
+import LinkService from '../../../service/LinkService';
 
 export default {
     data() {
         return {
             toast: new useToast(),
-            displayConfirmation: ref(false),
             parcelaService: new ParcelaService(),
-            displayConfirmationActivation: ref(false),
+            linkService: new LinkService(),
+            confirm: new useConfirm(),
             visibleRight: ref(false),
-            filters1: ref(null),
             visibleRightLink: ref(null),
             router: useRouter(),
-            loading1: ref(null),
-            empresas: ref(null),
             informacoes: ref(null),
             parcelas: ref(null),
             idEmpresa: ref(null),
+            link: ref(null),
+            empresas: ref(null),
+            locais: ref(null),
+            gerentes: ref(null),
+            diretores: ref(null),
             id_contrato: localStorage.getItem('id_contrato'),
-            form: ref({}),
-            editar: ref(false),
+            form: ref({
+                protheus: 999
+            }),
             preloading: ref(true),
             loading: ref(false) // Botão de PDF
         };
@@ -40,6 +45,32 @@ export default {
         this.parcelaService.buscaParcelas(this.id_contrato).then((data) => {
             this.parcelas = data.response;
             this.preloading = false;
+        });
+
+        // Metódo responsável por buscar todos links disponíveis no link
+        this.linkService.buscaPresidentes().then((data) => {
+            this.link = data.funcionarios;
+            console.log(this.link);
+        });
+
+        // Metódo responsável por buscar todas empresas cadastradas no link
+        this.linkService.buscaEmpresas().then((data) => {
+            this.empresas = data.empresas;
+        });
+
+        // Metódo responsável por buscar todos locais disponíves no link
+        this.linkService.buscaLocais().then((data) => {
+            this.locais = data.locais;
+        });
+
+        // Metódo responsável por buscar todos gerentes do link
+        this.linkService.buscaGerentes().then((data) => {
+            this.gerentes = data.funcionarios;
+        });
+
+        // Metódo responsável por buscar todos diretores do link
+        this.linkService.buscaDiretores().then((data) => {
+            this.diretores = data.funcionarios;
         });
     },
 
@@ -129,17 +160,18 @@ export default {
             this.form.empresa = info.empresa;
             this.form.cnpj = info.cnpj;
             this.visibleRight = true;
-            this.editar = true;
             this.idEmpresa = id;
         },
 
-        btnLink(dados) {
+        btnLink(idParcela, dados) {
             this.visibleRightLink = true;
+            this.form.valor = dados.valor;
+            this.form.dt_vencimento = dados.dt_vencimento;
+            console.log(dados);
         },
 
         btnCadastrar() {
             this.visibleRight = true;
-            this.editar = false;
         },
 
         btnExcluir(idParcela) {
@@ -149,6 +181,22 @@ export default {
                 this.buscaParcelas();
                 this.buscaContrato();
                 this.preloading = false;
+            });
+        },
+
+        confirmExcluir(idParcela) {
+            this.confirm.require({
+                message: 'Tem certeza que deseja excluir essa parcela?',
+                header: 'Excluir Parcela?',
+                icon: 'pi pi-info-circle',
+                rejectLabel: 'Cancelar',
+                acceptLabel: 'Excluir',
+                rejectClass: 'p-button-secondary p-button-outlined',
+                acceptClass: 'p-button-danger',
+                accept: () => {
+                    this.btnExcluir(idParcela);
+                },
+                reject: () => {}
             });
         },
 
@@ -167,6 +215,10 @@ export default {
         // Metódo responsável por voltar para meenu de contrar
         voltar() {
             this.router.push('/contratos'); // Mandando para tela principal
+        },
+
+        uploadPdf() {
+            this.form.pdf = this.$refs.pdf.files[0];
         }
     }
 };
@@ -177,6 +229,9 @@ export default {
         <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
             <ProgressSpinner />
         </div>
+
+        <ConfirmDialog></ConfirmDialog>
+
         <!-- Modal de Cadastro de Parcelas -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
             <h3 class="titleForm">Formulário de Cadastro</h3>
@@ -201,7 +256,6 @@ export default {
                 <hr />
                 <div class="field">
                     <Button @click.prevent="cadastrarParcela()" label="Cadastrar" class="mr-2 mb-2 p-button-info" />
-                    <Button v-if="this.editar == true" label="Editar" class="mr-2 mb-2 p-button-info" />
                 </div>
             </div>
         </Sidebar>
@@ -238,7 +292,7 @@ export default {
 
                             <div class="field col-12 md:col-4">
                                 <label for="Link">Link <span class="obrigatorio">*</span></label>
-                                <Dropdown id="Link" v-model="form.link" :options="links" optionLabel="link" placeholder="Selecione..."></Dropdown>
+                                <Dropdown id="Link" v-model="form.link" :options="link" optionLabel="nome" placeholder="Selecione..."></Dropdown>
                             </div>
                             <div class="field col-12 md:col-4">
                                 <label for="Empresa">Empresa <span class="obrigatorio">*</span></label>
@@ -249,7 +303,7 @@ export default {
                                 <Dropdown id="Local" v-model="form.local" :options="locais" optionLabel="local" placeholder="Selecione..."></Dropdown>
                             </div>
                             <div class="field col-12">
-                                <label for="descricao">Forncedor: <span class="obrigatorio">*</span></label>
+                                <label for="descricao">Fornecedor: <span class="obrigatorio">*</span></label>
                                 <Textarea v-tooltip.top="'Digite o forncedor'" id="descricao" rows="4" v-model="form.descricao" placeholder="Digite o fornecedor..." />
                             </div>
                         </div>
@@ -378,12 +432,12 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="..." header="..." :sortable="true" class="w-1">
+                    <Column field="..." header="..." :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
                             <Button @click.prevent="btnLink(slotProps.data.id, slotProps.data)" icon="pi pi-pencil" class="p-button-info" />
-                            <Button @click.prevent="btnExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
-                            <Button v-if="slotProps.data.status == 'Pago'" @click.prevent="btnEditar(slotProps.data.id, slotProps.data)" label="Comprovante" icon="pi pi-check" class="p-button-secondary ml-2" />
+                            <Button @click.prevent="confirmExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
+                            <Button @click.prevent="confirmarPagamento(slotProps.data.id)" icon="pi pi-check" class="p-button-success ml-2" />
                         </template>
                     </Column>
                 </DataTable>
