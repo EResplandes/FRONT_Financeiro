@@ -18,8 +18,10 @@ export default {
             visibleRightLink: ref(null),
             router: useRouter(),
             informacoes: ref(null),
+            idPedido: ref(null),
             parcelas: ref(null),
             idEmpresa: ref(null),
+            idParcela: ref(null),
             link: ref(null),
             empresas: ref(null),
             locais: ref(null),
@@ -50,7 +52,6 @@ export default {
         // Metódo responsável por buscar todos links disponíveis no link
         this.linkService.buscaPresidentes().then((data) => {
             this.link = data.funcionarios;
-            console.log(this.link);
         });
 
         // Metódo responsável por buscar todas empresas cadastradas no link
@@ -88,6 +89,33 @@ export default {
         buscaContrato() {
             this.parcelaService.buscaInformacoes(this.id_contrato).then((data) => {
                 this.informacoes = data.mensagem;
+                this.preloading = false;
+            });
+        },
+
+        // Metódo responsável por cadastrar pedido
+        cadastrarPedido() {
+            this.linkService.comFluxo(this.form).then((data) => {
+                console.log(data);
+                if (data.resposta == 'Pedido cadastrado com sucesso!') {
+                    this.showSuccess('Parcela enviada para o link com sucesso!');
+                    this.idPedido = data.pedido;
+                    this.statusLink();
+                    this.visibleRightLink = false;
+                    this.form = {};
+                } else {
+                    this.showError('Ocorreu algum erro, entre em contato com o Administrador!');
+                }
+            });
+        },
+
+        // Metódo responsável por atualizar status da parcela
+        statusLink() {
+            this.preloading = true;
+            this.parcelaService.statusLink(this.idParcela, this.idPedido).then((data) => {
+                if (data.resposta == 'Parcela enviada para o link com sucesso!') {
+                    this.buscaParcelas();
+                }
                 this.preloading = false;
             });
         },
@@ -142,6 +170,14 @@ export default {
             });
         },
 
+        // Metódo responsável por buscar status no link de cada parcela
+        buscaStatus(id) {
+            this.linkService.buscaStatus(id).then((data) => {
+                console.log(data[0].statusPedido);
+                return data[0].statusPedido;
+            });
+        },
+
         // Metódo responsável por gerar pdf
         async gerarPDF() {
             this.loading = true;
@@ -165,8 +201,8 @@ export default {
 
         btnLink(idParcela, dados) {
             this.visibleRightLink = true;
+            this.idParcela = idParcela;
             this.form.valor = dados.valor;
-            this.form.dt_vencimento = dados.dt_vencimento;
             console.log(dados);
         },
 
@@ -432,12 +468,19 @@ export default {
                         </template>
                     </Column>
 
+                    <Column field="Status" header="Status no Link" :sortable="true" class="w-1">
+                        <template #body="slotProps">
+                            <span class="p-column-title">Status</span>
+                            {{ this.buscaStatus(slotProps.data.id_pedido) }}
+                        </template>
+                    </Column>
+
                     <Column field="..." header="..." :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
-                            <Button @click.prevent="btnLink(slotProps.data.id, slotProps.data)" icon="pi pi-pencil" class="p-button-info" />
-                            <Button @click.prevent="confirmExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
+                            <Button v-if="slotProps.data.status == 'Pendente'" @click.prevent="btnLink(slotProps.data.id, slotProps.data)" icon="pi pi-pencil" class="p-button-info" />
                             <Button @click.prevent="confirmarPagamento(slotProps.data.id)" icon="pi pi-check" class="p-button-success ml-2" />
+                            <Button @click.prevent="confirmExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
                         </template>
                     </Column>
                 </DataTable>

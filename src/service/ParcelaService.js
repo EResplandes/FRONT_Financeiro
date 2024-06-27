@@ -84,6 +84,24 @@ export default class FornecedorService {
             });
     }
 
+    async statusLink(id, idPedido) {
+        return await fetch(`${API_URL}/parcelas/status-link/${id}/${idPedido}`, {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                Authorization: 'Bearer ' + token
+            }
+        })
+            .then((res) => res.json())
+            .then((d) => {
+                return d;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                throw error;
+            });
+    }
+
     formatarData(data) {
         const dataObj = new Date(data);
         const ano = dataObj.getFullYear();
