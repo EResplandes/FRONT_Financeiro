@@ -6,15 +6,16 @@ export default {
     data() {
         return {
             dashboardService: new DashboardService(),
-            informacoes: ref(null)
+            informacoes: ref(null),
+            preloading: ref(true)
         };
     },
 
     mounted: function () {
         // Metódo responsável por buscar todas as fornecedores
         this.dashboardService.listarInformacoes().then((data) => {
-            console.log(data);
             this.informacoes = data.informacoes;
+            this.preloading = false;
         });
     },
 
@@ -24,6 +25,10 @@ export default {
 
 <template>
     <div class="grid">
+        <div style="z-index: 99" v-if="preloading" class="full-screen-spinner">
+            <ProgressSpinner />
+        </div>
+
         <div class="col-12 lg:col-6 xl:col-6" v-for="(info, index) in informacoes" :key="index">
             <div class="card mb-0">
                 <div class="flex justify-content-between mb-3">
@@ -71,3 +76,42 @@ export default {
         </Fieldset>
     </div>
 </template>
+
+<style scoped lang="scss">
+::v-deep(.p-datatable-frozen-tbody) {
+    font-weight: bold;
+}
+
+::v-deep(.p-datatable-scrollable .p-frozen-column) {
+    font-weight: bold;
+}
+
+.titleForm {
+    text-align: center;
+}
+
+.modalRigth {
+    width: 500px;
+}
+
+.obrigatorio {
+    color: red;
+}
+
+.txt-small {
+    font-size: small;
+    font-style: italic;
+}
+
+.full-screen-spinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+</style>
