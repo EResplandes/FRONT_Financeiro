@@ -102,6 +102,29 @@ export default class FornecedorService {
             });
     }
 
+    anexaComprovante(form, idParcela) {
+        const formData = new FormData();
+        formData.append('comprovante', form?.comprovante ?? null);
+        formData.append('id_parcela', idParcela ?? null);
+
+        return fetch(`${API_URL}/parcelas/anexar-comprovante`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                Authorization: 'Bearer ' + token
+            },
+            body: formData
+        })
+            .then((res) => res.json())
+            .then((d) => {
+                return d;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                throw error;
+            });
+    }
+
     formatarData(data) {
         const dataObj = new Date(data);
         const ano = dataObj.getFullYear();

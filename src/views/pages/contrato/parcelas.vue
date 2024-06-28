@@ -16,6 +16,8 @@ export default {
             confirm: new useConfirm(),
             visibleRight: ref(false),
             visibleRightLink: ref(null),
+            modal: ref(null),
+            modalComprovante: ref(null),
             router: useRouter(),
             informacoes: ref(null),
             idPedido: ref(null),
@@ -25,6 +27,8 @@ export default {
             link: ref(null),
             empresas: ref(null),
             locais: ref(null),
+            pdfsrc: ref(null),
+            urlBase: 'https://contratos.gruporialma.com.br/storage',
             gerentes: ref(null),
             diretores: ref(null),
             id_contrato: localStorage.getItem('id_contrato'),
@@ -96,7 +100,6 @@ export default {
         // Metódo responsável por cadastrar pedido
         cadastrarPedido() {
             this.linkService.comFluxo(this.form).then((data) => {
-                console.log(data);
                 if (data.resposta == 'Pedido cadastrado com sucesso!') {
                     this.showSuccess('Parcela enviada para o link com sucesso!');
                     this.idPedido = data.pedido;
@@ -220,6 +223,31 @@ export default {
             });
         },
 
+        btnComprovante(id) {
+            this.modal = true;
+            this.idParcela = id;
+        },
+
+        btnBuscaComprovante(comprovante) {
+            this.modalComprovante = true;
+            this.pdfsrc = `${this.urlBase}/${comprovante}`;
+        },
+
+        // Metódo responsável por anexar comprovante
+        anexarComprovante() {
+            this.preloading = true;
+            this.parcelaService.anexaComprovante(this.form, this.idParcela).then((data) => {
+                if (data.resposta == 'Comprovante anexado com sucesso!') {
+                    this.showSuccess('Comprovante anexado com sucesso!');
+                    this.modal = false;
+                    this.buscaParcelas();
+                } else {
+                    this.showError('Ocorreu algum erro, entre em contato com o Administrador!');
+                }
+                this.preloading = false;
+            });
+        },
+
         confirmExcluir(idParcela) {
             this.confirm.require({
                 message: 'Tem certeza que deseja excluir essa parcela?',
@@ -255,6 +283,10 @@ export default {
 
         uploadPdf() {
             this.form.pdf = this.$refs.pdf.files[0];
+        },
+
+        uploadPdfComprovante() {
+            this.form.comprovante = this.$refs.pdfComprovante.files[0];
         }
     }
 };
@@ -267,6 +299,26 @@ export default {
         </div>
 
         <ConfirmDialog></ConfirmDialog>
+
+        <!-- Modal para anexar comprovante -->
+        <Dialog v-model:visible="modal" modal header="Anexo de Comprovante" :style="{ width: '50%' }">
+            <span class="text-surface-500 dark:text-surface-400 block mb-8">Insira o comprovante referente a parcela.</span>
+            <div class="flex items-center gap-4 mb-8">
+                <label for="email" class="font-semibold w-24">Comprovante:</label>
+                <FileUpload chooseLabel="Selecionar Arquivo" @change="uploadPdfComprovante" mode="basic" type="file" ref="pdfComprovante" name="demo[]" accept=".pdf,.docx" :maxFileSize="999999999"></FileUpload>
+            </div>
+            <div class="flex justify-end gap-2">
+                <Button style="width: 50%" type="button" label="Cancelar" severity="secondary" @click="modal = false"></Button>
+                <Button style="width: 50%" type="button" label="Anexar" severity="info" @click.prevent="anexarComprovante()"></Button>
+            </div>
+        </Dialog>
+
+        <!-- Modal para visualizar comprovante -->
+        <Dialog v-model:visible="modalComprovante" modal header="Comprovante" :style="{ width: '60%' }">
+            <div class="flex items-center gap-4 mb-8">
+                <iframe :src="pdfsrc" style="width: 100%; height: 700px; border: none"> Oops! ocorreu um erro. </iframe>
+            </div>
+        </Dialog>
 
         <!-- Modal de Cadastro de Parcelas -->
         <Sidebar style="width: 500px" v-model:visible="visibleRight" :baseZIndex="1000" position="right">
@@ -468,19 +520,13 @@ export default {
                         </template>
                     </Column>
 
-                    <Column field="Status" header="Status no Link" :sortable="true" class="w-1">
-                        <template #body="slotProps">
-                            <span class="p-column-title">Status</span>
-                            {{ this.buscaStatus(slotProps.data.id_pedido) }}
-                        </template>
-                    </Column>
-
                     <Column field="..." header="..." :sortable="true" class="w-2">
                         <template #body="slotProps">
                             <span class="p-column-title">Qtd. de ativos</span>
                             <Button v-if="slotProps.data.status == 'Pendente'" @click.prevent="btnLink(slotProps.data.id, slotProps.data)" icon="pi pi-pencil" class="p-button-info" />
-                            <Button @click.prevent="confirmarPagamento(slotProps.data.id)" icon="pi pi-check" class="p-button-success ml-2" />
-                            <Button @click.prevent="confirmExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
+                            <Button v-if="slotProps.data.status == 'Aprovado'" @click.prevent="btnComprovante(slotProps.data.id)" icon="pi pi-check" class="p-button-success ml-2" />
+                            <Button v-if="slotProps.data.status != 'Pago'" @click.prevent="confirmExcluir(slotProps.data.id)" icon="pi pi-trash" class="p-button-danger ml-2" />
+                            <Button v-if="slotProps.data.status == 'Pago'" @click.prevent="btnBuscaComprovante(slotProps.data.comprovante)" icon="pi pi-eye" class="p-button-secondary ml-2" />
                         </template>
                     </Column>
                 </DataTable>
