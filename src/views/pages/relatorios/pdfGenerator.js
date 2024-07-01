@@ -7,7 +7,7 @@ function pad(valor) {
     return valor < 10 ? '0' + valor : valor;
 }
 
-// Metódo responsável por formatar cnpj
+// Método responsável por formatar CNPJ
 function formatarCNPJ(cnpj) {
     // Remove caracteres não numéricos
     cnpj = cnpj.replace(/\D/g, '');
@@ -39,31 +39,51 @@ export function generatePDF(informacoes, parcelas) {
 
     // Data de Emissão
     doc.setFontSize(8);
-    doc.text(`Data de Emissão: ${dataHoraFormatada}`, 220, 13);
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
+    doc.text(`DATA DE EMISSÃO: ${dataHoraFormatada}`, 220, 13);
 
     doc.setFontSize(15);
-    doc.text(`Contrato nº ${informacoes[0].contrato}`, 130, 15);
+    doc.text(`CONTRATO Nº ${informacoes[0].contrato}`, 130, 15);
 
-    doc.addImage(rialmaImg, 'PNG', 15, 10, 60, 30); // Adiciona a imagem no canto superior esquerdo
+    doc.addImage(rialmaImg, 'PNG', 15, 10, 40, 20); // Adiciona a imagem no canto superior esquerdo
+
+    // Adiciona a seção com borda para as informações do fornecedor
+    const startX = 0;
+    const startY = 35;
+    const width = 800;
+    const height = 20;
+
+    // Desenha um retângulo ao redor das informações
+    doc.rect(startX, startY, width, height);
 
     // Adiciona as informações do contrato e fornecedor
     doc.setFontSize(10);
+    doc.text(`FORNECEDOR(a):`, 15, 42);
+    doc.setFont('helvetica', 'normal'); // Restaura a fonte normal
+    doc.text(informacoes[0].nome, 47, 42);
 
-    doc.text(`Fornecedor(a): ${informacoes[0].nome}`, 15, 50);
-    doc.text(`Empresa: ${informacoes[0].nome_empresa}`, 15, 60);
-    doc.text(`CNPJ Fornecedor: ${formatarCNPJ(informacoes[0].cnpj)}`, 15, 55);
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
+    doc.text(`CNPJ:`, 15, 47);
+    doc.setFont('helvetica', 'normal'); // Restaura a fonte normal
+    doc.text(formatarCNPJ(informacoes[0].cnpj), 47, 47);
 
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
+    doc.text(`EMPRESA:`, 15, 52);
+    doc.setFont('helvetica', 'normal'); // Restaura a fonte normal
+    doc.text(informacoes[0].nome_empresa, 47, 52);
+
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
     doc.setFontSize(10);
-    doc.text(`Unidade Consumidora: ${informacoes[0].unidade_consumidora}`, 150, 55);
+    doc.text(`UNIDADE CONSUMIDORA:`, 150, 42);
+    doc.setFont('helvetica', 'normal'); // Restaura a fonte normal
+    doc.text(informacoes[0].unidade_consumidora, 198, 42);
 
     doc.setFontSize(15);
-    doc.text(`PARCELAS`, 135, 80);
-
-    // Adiciona o valor do contrato
-    // doc.text(`Valor do Contrato: ${informacoes[0].valor_contrato.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 90, 60);
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
+    doc.text(`PARCELAS`, 135, 67);
 
     // Defina o título da tabela
-    const headers = [['Mês Ref.', 'Dt. Vencimento', 'Valor', 'Observação', 'Status']];
+    const headers = [['MÊS REF.', 'DT. VENCIMENTO', 'VALOR', 'OBSERVAÇÃO', 'STATUS']];
 
     // Formata os dados da tabela
     const tableData = parcelas.map((parcela) => {
@@ -74,16 +94,30 @@ export function generatePDF(informacoes, parcelas) {
         const ano = dataVencimento.getFullYear();
         const dataFormatada = `${dia}/${mes}/${ano}`;
 
-        return [parcela.mes_referencia, dataFormatada, parcela.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), parcela.observacao, parcela.status];
+        return [parcela.mes_referencia, dataFormatada, parseFloat(parcela.valor)?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), parcela.observacao ? parcela.observacao : 'N/C', parcela.status];
     });
+
+    // Calcula o valor total das parcelas
+    doc.setFont('helvetica', 'bold'); // Define a fonte como negrito
+    const valorTotal = parcelas.reduce((total, parcela) => total + parcela.valor, 0);
+
+    // Adiciona a linha com o valor total ao final do tableData
+    tableData.push(['', '', '', 'VALOR TOTAL', valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })]);
 
     // Adicione a tabela ao documento PDF
     doc.autoTable({
         head: headers,
         body: tableData,
-        startY: 90, // Posição Y inicial da tabela
+        startY: 77, // Posição Y inicial da tabela
         theme: 'grid', // Estilo da tabela
-        headStyles: { fillColor: [2, 79, 147] }, // Cor de fundo do cabeçalho da tabela
+        headStyles: {
+            fillColor: [2, 79, 147],
+            halign: 'center' // Centraliza o texto no cabeçalho
+        },
+        bodyStyles: {
+            halign: 'center',
+            valign: 'middle' // Centraliza o texto verticalmente no corpo da tabela
+        },
         alternateRowStyles: { fillColor: [255, 255, 255] }, // Cor de fundo das linhas alternadas da tabela
         columnStyles: {
             0: { columnWidth: 20 },

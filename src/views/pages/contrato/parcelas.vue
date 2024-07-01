@@ -429,32 +429,32 @@ export default {
             <div v-for="item in informacoes" class="surface-section px-4 py-5 md:px-6 lg:px-8">
                 <div class="flex align-items-start flex-column lg:justify-content-between lg:flex-row">
                     <div>
-                        <div class="font-medium text-3xl text-900">{{ item.servico }} | Unidade: {{ item.unidade_consumidora }}</div>
+                        <div class="font-medium text-3xl text-900">{{ item.servico }} | <b>Unidade:</b> {{ item.unidade_consumidora }}</div>
                         <br /><br />
                         <div class="flex align-items-center text-700 flex-wrap">
                             <div class="mr-5 flex align-items-center mt-3">
                                 <i class="pi pi-money-bill mr-2"></i>
-                                <span>Valor: {{ item.valor_contrato?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
+                                <span><b>Valor:</b> {{ item.valor_contrato?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }}</span>
                             </div>
                             <div class="mr-5 flex align-items-center mt-3">
                                 <i class="pi pi-sitemap mr-2"></i>
-                                <span>Qtd. Parcelas: {{ item.qtd_parcelas }}</span>
+                                <span><b>Qtd. Parcelas:</b> {{ item.qtd_parcelas }}</span>
                             </div>
                             <div class="flex align-items-center mt-3 mr-4">
                                 <i class="pi pi-building mr-2"></i>
-                                <span>Empresa: {{ item.nome_empresa }}</span>
+                                <span><b>Empresa:</b> {{ item.nome_empresa }}</span>
                             </div>
                             <div class="flex align-items-center mt-3 mr-4">
                                 <i class="pi pi-user mr-2"></i>
-                                <span>Fornecedor: {{ item.nome }}</span>
+                                <span><b>Fornecedor:</b> {{ item.nome }}</span>
                             </div>
                             <div class="flex align-items-center mt-3 mr-4">
                                 <i class="pi pi-id-card mr-2"></i>
-                                <span>Nome Fantasia: {{ item.nome_fantasia }}</span>
+                                <span><b>Nome Fantasia:</b> {{ item.nome_fantasia }}</span>
                             </div>
                             <div class="flex align-items-center mt-3">
                                 <i class="pi pi-info mr-2"></i>
-                                <span>CNPJ: {{ formatarCNPJ(item.cnpj) }}</span>
+                                <span><b>CNPJ:</b> {{ formatarCNPJ(item.cnpj) }}</span>
                             </div>
                         </div>
                     </div>
